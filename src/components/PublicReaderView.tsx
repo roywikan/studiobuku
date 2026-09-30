@@ -513,7 +513,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
 
             <div className="bg-white p-3 rounded-xl border-2 border-amber-400 shadow-inner inline-block mx-auto max-w-[260px]">
               <img
-                src="/QRIS-DANA.jpeg"
+                src="https://studio.buku.biz.id/QRIS-DANA.jpeg"
                 alt="QRIS DANA Pemilik Studio.Buku.Biz.ID"
                 className="w-full h-auto rounded-lg object-contain"
               />
@@ -522,7 +522,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
               <p className="font-bold text-amber-400">Penerima QRIS DANA: Studio.Buku.Biz.ID</p>
               <p className="text-[11px] opacity-80">
-                Terima kasih atas donasi & dukungan Anda untuk keberlangsungan penulisan karya naskah ini!
+                Studio Buku tidak memungut biaya apapun dari para penulisnya. Terima kasih atas donasi & dukungan Anda untuk keberlangsungan wadah gratis penulisan karya naskah ini!
               </p>
             </div>
           </div>

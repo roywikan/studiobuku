@@ -980,7 +980,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
               <p className="font-bold text-amber-400">Penerima QRIS DANA: Studio.Buku.Biz.ID</p>
               <p className="text-[11px] opacity-80">
-                Terima kasih atas donasi & dukungan Anda untuk keberlangsungan wadah gratis penulisan karya naskah ini!
+                Studio Buku tidak memungut biaya apapun dari para penulisnya. Terima kasih atas donasi & dukungan Anda untuk keberlangsungan wadah gratis penulisan karya naskah ini!
               </p>
             </div>
           </div>

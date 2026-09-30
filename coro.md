@@ -204,6 +204,46 @@ Untuk mengaktifkan otentikasi Google Sign-In pada domain custom (`studio.buku.bi
    - ✅ Fitur Asisten AI Gemini berfungsi tanpa kendala.
    - ✅ Tautan Reader Publik (`https://studio.buku.biz.id/public/project/...`) dan fitur Glosarium Interaktif berjalan dengan baik.
 
+
+
+
+### Variabel GEMINI_API_KEY pada proyek Studio Buku:
+1. Apakah Setiap Penulis Menggunakan Key Berbeda atau 1 Key yang Sama?
+👉 Rekomendasi Terbaik: 1 API Key Terpusat (Shared Server Key) + Opsi Key Pribadi Penulis
+Mengapa 1 API Key Terpusat adalah yang Terbaik?
+Pengalaman Pengguna (Out-of-the-Box) yang Mulus:
+Seluruh tim penulis (Rian, Kirana, maupun penulis pendamping baru) dapat langsung fokus menulis buku dan menikmati fitur AI (Lanjutkan AI, Proofread EBI, Outline Bab, Draf Dialog) tanpa perlu repot mendaftar ke Google AI Studio atau mengonfigurasi API Key secara mandiri.
+Keamanan Sesuai Standar Industri (Server-Side Proxy):
+API Key disimpan dengan aman di server (server.ts) melalui file lingkungan .env dan tidak pernah diekspos ke publik/browser client.
+2. Kemudahan Pengaturan & Fleksibilitas Dual-Mode
+Untuk memberikan fleksibilitas penuh, proyek ini kini dilengkapi dengan Sistem Dual-Mode API Key:
+Default — 1 Key Terpusat Studio (Server Side):
+Cukup isikan variabel GEMINI_API_KEY pada file .env proyek atauSecrets di AI Studio.
+Semua penulis otomatis terhubung ke layanan AI.
+Opsi Key Pribadi (Custom API Key):
+Jika ada penulis yang ingin menggunakan kuota API Gemini mereka sendiri (misalnya untuk menghindari batas kuota gratis saat jam sibuk), mereka dapat mengeklik tombol "API Key" di halaman Asisten AI.
+Kunci pribadi tersebut hanya disimpan secara lokal di peramban masing-masing penulis dan dikirimkan secara aman via request header (x-gemini-api-key).
+3. Cara Mengisikan GEMINI_API_KEY pada Proyek
+File /.env.example telah disediakan di dalam proyek:
+code
+Env
+# GEMINI_API_KEY: Wajib untuk fitur Asisten AI Gemini
+GEMINI_API_KEY="AIzaSy_GANTI_DENGAN_KEY_GEMINI_ANDA"
+Langkah Konfigurasi:
+Dapatkan API Key gratis di Google AI Studio. https://www.google.com/url?sa=E&q=https%3A%2F%2Faistudio.google.com%2Fapp%2Fapikey
+Isikan kunci tersebut ke file .env pada variabel GEMINI_API_KEY.
+Aplikasi siap digunakan oleh seluruh penulis di dalam Studio Buku!
+ 
+### Bagikan Format Virtual Account (Untuk Transfer dari Bank)
+Jika pengirim ingin mengirim uang lewat Mobile Banking atau ATM ke nomor HP e-wallet Anda, berikan teks instruksi berupa Kode Virtual Account + Nomor HP Anda. Berikut adalah daftarnya:
+
+E-Wallet	Dari Bank	Format Kode & Nomor HP	Contoh
+DANA	BCA	3901 + Nomor HP	39010812345678
+DANA Mandiri	89508 + Nomor HP	895080812345678
+GoPay	BCA	70001 + Nomor HP	700010812345678
+GoPay	Mandiri	60737 + Nomor HP	607370812345678
+OVO	BCA	39358 + Nomor HP	393580812345678
+OVO	Mandiri	60001 + Nomor HP	600010812345678
 ---
 
-*Dokumen ini dibuat secara resmi untuk pengelolaan aplikasi Studio Buku (Nulis Bareng Studio).*
+*Dokumen ini dibuat secara resmi untuk pengelolaan aplikasi Studio Buku (Nulis Buku Bareng Studio).*
