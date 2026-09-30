@@ -9,6 +9,7 @@ import { BookVisualizer } from "./components/BookVisualizer";
 import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
+import { LoginGate, UserSession } from "./components/LoginGate";
 
 const initialDefaultDb: DB = {
   authors: [
@@ -96,6 +97,15 @@ const initialDefaultDb: DB = {
 };
 
 export default function App() {
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    try {
+      const saved = localStorage.getItem("studio_buku_session");
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [db, setDb] = useState<DB | null>(null);
   const [activeTab, setActiveTab] = useState<"editor" | "ideas" | "logs" | "preview" | "ai">("editor");
   const [currentAuthor, setCurrentAuthor] = useState<Author | null>(null);
@@ -119,6 +129,25 @@ export default function App() {
     localStorage.setItem("studio_buku_theme", id);
   };
 
+  const handleLoginSuccess = (session: UserSession) => {
+    setUserSession(session);
+    localStorage.setItem("studio_buku_session", JSON.stringify(session));
+    if (db && db.authors) {
+      setCurrentAuthor({
+        id: "auth_session",
+        name: session.name,
+        role: "Penulis Studio",
+        avatar: session.avatar || "✍️",
+        color: "bg-amber-500"
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    setUserSession(null);
+    localStorage.removeItem("studio_buku_session");
+  };
+
   const loadData = async (targetProjectId?: string) => {
     try {
       const res = await fetch("/api/data");
@@ -136,7 +165,17 @@ export default function App() {
       setDb(data);
 
       if (data.authors && data.authors.length > 0 && !currentAuthor) {
-        setCurrentAuthor(data.authors[0]);
+        if (userSession) {
+          setCurrentAuthor({
+            id: "auth_session",
+            name: userSession.name,
+            role: "Penulis Studio",
+            avatar: userSession.avatar || "✍️",
+            color: "bg-amber-500"
+          });
+        } else {
+          setCurrentAuthor(data.authors[0]);
+        }
       }
 
       const projId = targetProjectId || selectedProjectId || (data.projects[0] ? data.projects[0].id : "proj_1");
@@ -156,7 +195,7 @@ export default function App() {
       if (data.authors && data.authors.length > 0 && !currentAuthor) {
         setCurrentAuthor(data.authors[0]);
       }
-      setSelectedProjectId(data.projects[0]?.id || "proj_1");
+      setSelectedProjectId(targetProjectId || data.projects[0]?.id || "proj_1");
       setSelectedChapterId(data.chapters[0]?.id || "chap_1");
     } finally {
       setLoading(false);
@@ -166,6 +205,10 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
+
+  if (!userSession) {
+    return <LoginGate onLoginSuccess={handleLoginSuccess} />;
+  }
 
   if (loading || !db || !currentAuthor) {
     return (
@@ -184,10 +227,47 @@ export default function App() {
   const currentProjectIdeas = db.ideas.filter(i => i.projectId === project.id);
   const currentProjectLogs = db.logs.filter(l => l.projectId === project.id);
 
-  // Handlers for Projects
+  // Handlers for Projects - INSTANT UI RESPONSE
   const handleCreateProject = async (newProjData: { title: string; subtitle: string; genre: string; synopsis: string }) => {
     try {
-      const res = await fetch("/api/projects", {
+      const newProjId = "proj_" + Date.now();
+      const newProj: Project = {
+        id: newProjId,
+        title: newProjData.title,
+        subtitle: newProjData.subtitle,
+        genre: newProjData.genre,
+        synopsis: newProjData.synopsis,
+        createdAt: new Date().toISOString()
+      };
+
+      const firstChapId = "chap_" + Date.now();
+      const firstChap: Chapter = {
+        id: firstChapId,
+        projectId: newProjId,
+        title: "Bab 1: Permulaan",
+        subtitle: "Draf awal cerita",
+        content: "Tulis isi naskah bab pertama Anda di sini...",
+        order: 1,
+        status: "draft",
+        lastEditedBy: currentAuthor.name,
+        updatedAt: new Date().toISOString()
+      };
+
+      // 1. Instantly update React state so UI updates in 0ms!
+      const updatedDb: DB = {
+        ...db,
+        projects: [newProj, ...db.projects],
+        chapters: [firstChap, ...db.chapters]
+      };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
+      // 2. Select new project and new chapter immediately!
+      setSelectedProjectId(newProjId);
+      setSelectedChapterId(firstChapId);
+
+      // 3. Send to API in background
+      await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -195,25 +275,8 @@ export default function App() {
           authorName: currentAuthor.name
         })
       });
-      if (res.ok && res.headers.get("content-type")?.includes("application/json")) {
-        const createdProj: Project = await res.json();
-        await loadData(createdProj.id);
-      } else {
-        const newProj: Project = {
-          id: "proj_" + Date.now(),
-          title: newProjData.title,
-          subtitle: newProjData.subtitle,
-          genre: newProjData.genre,
-          synopsis: newProjData.synopsis,
-          createdAt: new Date().toISOString()
-        };
-        const updatedDb = { ...db, projects: [...db.projects, newProj] };
-        setDb(updatedDb);
-        localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
-        setSelectedProjectId(newProj.id);
-      }
     } catch (e) {
-      console.error("Error creating new project:", e);
+      console.warn("Project created locally in state:", e);
     }
   };
 
@@ -425,6 +488,7 @@ export default function App() {
         onOpenImport={() => setIsImportOpen(true)}
         onOpenInvite={() => setIsInviteOpen(true)}
         onOpenNewChapter={handleCreateChapter}
+        onLogout={handleLogout}
         saveStatus={saveStatus}
         lastSavedTime={lastSavedTime}
       />

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Author, Project } from "../types";
 import { WriterTheme, WRITER_THEMES } from "../theme";
 import { StudioBukuLogo } from "./StudioBukuLogo";
-import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, FolderPlus, BookOpen } from "lucide-react";
+import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, FolderPlus, BookOpen, LogOut, Lock } from "lucide-react";
 
 interface NavbarProps {
   activeTab: "editor" | "ideas" | "logs" | "preview" | "ai";
@@ -19,6 +19,7 @@ interface NavbarProps {
   onOpenImport: () => void;
   onOpenInvite: () => void;
   onOpenNewChapter: () => void;
+  onLogout?: () => void;
   saveStatus?: "idle" | "typing" | "saving" | "saved" | "error";
   lastSavedTime?: string;
 }
@@ -38,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenImport,
   onOpenInvite,
   onOpenNewChapter,
+  onLogout,
   saveStatus = "saved",
   lastSavedTime,
 }) => {
@@ -319,7 +321,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden lg:inline">Undang</span>
             </button>
 
-            {/* Profile Switcher */}
+            {/* Profile Switcher & Logout Menu */}
             <div className="relative group">
               <button className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 border-2 border-amber-500/60 rounded-full py-1.5 px-3.5 text-xs text-white transition shadow-lg">
                 <span className="text-sm">{currentAuthor.avatar}</span>
@@ -346,6 +348,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
                   </button>
                 ))}
+
+                {onLogout && (
+                  <div className="pt-1 mt-1 border-t border-slate-800 px-2">
+                    <button
+                      onClick={onLogout}
+                      className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/20 transition"
+                    >
+                      <Lock className="w-3.5 h-3.5 text-red-400" />
+                      <span>Kunci & Keluar Studio</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
