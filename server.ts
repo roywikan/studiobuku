@@ -6,6 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
+const SCHEMA_FILE = path.join(process.cwd(), "schema.sql");
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -260,7 +261,6 @@ function linkifyGlossary(text: string, glossary: GlossaryTerm[]): string {
 
   if (searchPhrases.length === 0) return text;
 
-  // Sort by length descending so longer terms match first
   searchPhrases.sort((a, b) => b.length - a.length);
 
   const escapedPhrases = searchPhrases.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -283,6 +283,20 @@ async function startServer() {
     res.json(db);
   });
 
+  // Automated DB Bootstrap Endpoint
+  app.post("/api/db/bootstrap", (req, res) => {
+    try {
+      writeDb(initialDb);
+      res.json({
+        success: true,
+        message: "Database Studio Buku berhasil dibootstrap dengan skema awal dan data seed default.",
+        db: initialDb
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Gagal melakukan bootstrap database: " + err?.message });
+    }
+  });
+
   // Projects CRUD
   app.post("/api/projects", (req, res) => {
     const db = readDb();
@@ -297,7 +311,6 @@ async function startServer() {
     };
     db.projects.push(newProject);
 
-    // Initial chapter for new project
     const firstChap: Chapter = {
       id: "chap_" + Date.now(),
       projectId: newProject.id,

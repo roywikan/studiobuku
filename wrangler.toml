@@ -1,0 +1,14 @@
+name = "studiobuku"
+main = "server.ts"
+compatibility_date = "2024-01-01"
+
+[site]
+bucket = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "studiobuku-db"
+database_id = "abc12345-6789-xxxx-xxxx-xxxxxxxxxxxx" # Ganti dengan database_id dari wrangler d1 create
+
+[vars]
+NODE_VERSION = "18"
