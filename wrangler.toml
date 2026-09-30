@@ -8,7 +8,7 @@ bucket = "./dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "studiobuku-db"
-database_id = "abc12345-6789-xxxx-xxxx-xxxxxxxxxxxx" # Ganti dengan database_id dari wrangler d1 create
+database_id = "6d8fca8c-6bc8-4b88-9201-5a0ba5a34a13" # Ganti dengan database_id dari wrangler d1 create
 
 [vars]
 NODE_VERSION = "18"
