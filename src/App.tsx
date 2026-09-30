@@ -10,6 +10,8 @@ import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
+import { auth } from "./firebase";
+import { signOut } from "firebase/auth";
 
 const initialDefaultDb: DB = {
   authors: [
@@ -101,7 +103,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem("studio_buku_session");
       return saved ? JSON.parse(saved) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   });
@@ -143,7 +145,12 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn("SignOut error:", e);
+    }
     setUserSession(null);
     localStorage.removeItem("studio_buku_session");
   };
@@ -253,7 +260,6 @@ export default function App() {
         updatedAt: new Date().toISOString()
       };
 
-      // 1. Instantly update React state so UI updates in 0ms!
       const updatedDb: DB = {
         ...db,
         projects: [newProj, ...db.projects],
@@ -262,11 +268,9 @@ export default function App() {
       setDb(updatedDb);
       localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
 
-      // 2. Select new project and new chapter immediately!
       setSelectedProjectId(newProjId);
       setSelectedChapterId(firstChapId);
 
-      // 3. Send to API in background
       await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
