@@ -986,10 +986,14 @@ async function startServer() {
                 ${escapeHtml(project.synopsis)}
               </p>
               <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-family:system-ui;">
-                <a href="mailto:Roy.Wikan@gmail.com?subject=Dukungan%20/ %20Hibah%20/ %20Investasi%20Naskah%20${encodeURIComponent(project.title)}" 
-                   style="background:var(--accent); color:#0f172a; padding:8px 18px; border-radius:20px; font-weight:900; text-decoration:none; font-size:0.8rem; shadow:0 4px 12px rgba(0,0,0,0.2);">
-                   ✉️ Hubungi / Sponsori Penulis
+                <a href="mailto:Roy.Wikan@gmail.com?subject=Kontak%20Penulis%20Naskah%20${encodeURIComponent(project.title)}" 
+                   style="background:rgba(255,255,255,0.12); color:var(--text); padding:8px 18px; border-radius:20px; font-weight:800; text-decoration:none; font-size:0.8rem; border:1px solid var(--border);">
+                   ✉️ Kontak Penulis
                 </a>
+                <button onclick="openQrisModal()" 
+                   style="background:var(--accent); color:#0f172a; border:none; padding:8px 18px; border-radius:20px; font-weight:900; font-size:0.8rem; cursor:pointer; shadow:0 4px 12px rgba(0,0,0,0.2);">
+                   💸 Donasi QRIS DANA
+                </button>
                 <a href="${projectCanonicalUrl}" 
                    style="background:rgba(255,255,255,0.1); color:var(--text); padding:8px 18px; border-radius:20px; font-weight:800; text-decoration:none; font-size:0.8rem; border:1px solid var(--border);">
                    📖 Lihat Seluruh Draf Bab (${projChapters.length} Bab)
@@ -1034,9 +1038,8 @@ async function startServer() {
 
             <!-- Footer -->
             <div class="footer">
-              Dipublikasikan secara resmi melalui <strong><a href="https://studio.buku.biz.id" style="color:var(--accent); text-decoration:none;">Studio Buku (studio.buku.biz.id)</a></strong><br/>
-              Draf Naskah Hak Cipta © 2026 Studio Buku. Seluruh hak cipta dilindungi undang-undang.<br/>
-              Untuk keperluan riset akademis, hibah penulisan, atau investasi penerbitan, hubungi: <a href="mailto:Roy.Wikan@gmail.com" style="color:var(--accent);">Roy.Wikan@gmail.com</a>
+              <strong style="color:var(--accent);">Hak cipta milik : Roy.Wikan@gmail.com, Nulis Buku Bareng di <a href="https://Studio.Buku.Biz.ID" target="_blank" style="color:var(--accent); text-decoration:underline;">https://Studio.Buku.Biz.ID</a></strong><br/>
+              Seluruh hak cipta dilindungi undang-undang.
             </div>
           </div>
 
@@ -1074,6 +1077,32 @@ async function startServer() {
             </div>
           </div>
 
+          <!-- QRIS DANA DONATION MODAL -->
+          <div id="qris-modal" class="modal-overlay" onclick="closeQrisModal()">
+            <div class="modal-box" style="text-align: center; max-width: 440px;" onclick="event.stopPropagation()">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="background: rgba(245,158,11,0.2); color: var(--accent); padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">
+                  💸 Donasi QRIS DANA Studio.Buku.Biz.ID
+                </span>
+                <button onclick="closeQrisModal()" style="background:none; border:none; color:var(--text); font-size: 1.3rem; cursor:pointer; font-weight:bold;">✕</button>
+              </div>
+
+              <h3 style="margin: 8px 0; color: var(--accent); font-size: 1.2rem;">Dukung Penulis & Proyek Naskah</h3>
+              <p style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 16px; font-family: system-ui, sans-serif; line-height: 1.5;">
+                Pindai / Scan QRIS DANA di bawah ini menggunakan aplikasi <strong>DANA, GoPay, OVO, ShopeePay, BCA, Mandiri, BRI, BNI</strong> atau m-banking / e-wallet lainnya.
+              </p>
+
+              <div style="background: white; padding: 12px; border-radius: 14px; border: 2px solid var(--accent); display: inline-block; margin-bottom: 16px;">
+                <img src="/QRIS-DANA.jpeg" alt="QRIS DANA Studio.Buku.Biz.ID" style="max-width: 240px; width: 100%; height: auto; border-radius: 8px; display: block;" />
+              </div>
+
+              <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; font-size: 0.8rem; font-family: system-ui, sans-serif;">
+                <strong style="color: var(--accent);">Penerima QRIS DANA: Studio.Buku.Biz.ID</strong><br/>
+                <span style="opacity: 0.8; font-size: 0.75rem;">Terima kasih atas donasi & dukungan Anda untuk keberlangsungan penulisan karya ini!</span>
+              </div>
+            </div>
+          </div>
+
           <script>
             const GLOSSARY_DATA = ${JSON.stringify(projGlossary)};
 
@@ -1097,6 +1126,14 @@ async function startServer() {
 
             function closeFullGlossaryDrawer() {
               document.getElementById('full-glossary-modal').style.display = 'none';
+            }
+
+            function openQrisModal() {
+              document.getElementById('qris-modal').style.display = 'flex';
+            }
+
+            function closeQrisModal() {
+              document.getElementById('qris-modal').style.display = 'none';
             }
           </script>
         </body>
@@ -1250,6 +1287,12 @@ async function startServer() {
       res.status(500).send("Firebase Auth Proxy Error: " + err?.message);
     }
   });
+
+  // Serve static assets including QRIS-DANA.jpeg
+  app.get("/QRIS-DANA.jpeg", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "QRIS-DANA.jpeg"));
+  });
+  app.use(express.static(process.cwd()));
 
   app.get("/privacy", (req, res) => {
     res.send(`

@@ -33,7 +33,10 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
 
   // Public Share Modal State
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showQrisModal, setShowQrisModal] = useState(false);
   const [copiedType, setCopiedType] = useState<"chapter" | "project" | null>(null);
+
+  const authorCopyrightText = `Hak cipta milik : ${currentAuthor?.name || "Roy.Wikan@gmail.com"}, Nulis Buku Bareng di https://Studio.Buku.Biz.ID`;
 
   const totalWords = chapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
   const currentChapter = chapters[activeChapterIndex] || chapters[0];
@@ -62,7 +65,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
 
   // Export TXT
   const handleExportTxt = () => {
-    let fullText = `${project.title.toUpperCase()}\n${project.subtitle}\nGenre: ${project.genre}\n\nSINOPSIS:\n${project.synopsis}\n\n=====================\n\n`;
+    let fullText = `${project.title.toUpperCase()}\n${project.subtitle}\nGenre: ${project.genre}\n${authorCopyrightText}\n\nSINOPSIS:\n${project.synopsis}\n\n=====================\n\n`;
     chapters.forEach((ch, idx) => {
       fullText += `\n\n--- BAB ${idx + 1}: ${ch.title} ---\n${ch.subtitle || ""}\n\n${ch.content}\n\n`;
     });
@@ -95,13 +98,25 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
+          spacing: { after: 150 },
           children: [
             new TextRun({
               text: project.title,
               bold: true,
               size: 44,
               color: "111827",
+            }),
+          ],
+        }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 },
+          children: [
+            new TextRun({
+              text: authorCopyrightText,
+              italics: true,
+              size: 18,
+              color: "4B5563",
             }),
           ],
         })
@@ -372,9 +387,9 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
     }
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(120, 120, 120);
-    doc.text(`Disusun & Diunduh via Studio Buku pada ${new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}`, pageWidth / 2, 270, { align: "center" });
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 100, 100);
+    doc.text(authorCopyrightText, pageWidth / 2, 275, { align: "center" });
 
     doc.addPage();
     let currentPage = 2;
@@ -497,7 +512,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
       doc.setLineWidth(0.3);
       doc.line(margin, 14, pageWidth - margin, 14);
 
-      doc.text(`Halaman ${p} dari ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+      doc.text(`${authorCopyrightText}  •  Halaman ${p} dari ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: "center" });
     }
 
     doc.save(`${project.title.toLowerCase().replace(/\s+/g, "_")}_naskah_studio_buku.pdf`);
@@ -906,13 +921,67 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-between items-center pt-2">
+              <button
+                onClick={() => {
+                  setShowShareModal(false);
+                  setShowQrisModal(true);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-xs font-black rounded-full transition shadow flex items-center space-x-1.5 cursor-pointer"
+              >
+                <span>💸 Lihat QRIS Donasi DANA</span>
+              </button>
+
               <button
                 onClick={() => setShowShareModal(false)}
                 className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white border-2 border-slate-700 text-xs font-bold rounded-full transition"
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QRIS DANA DONATION MODAL */}
+      {showQrisModal && (
+        <div
+          className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 font-sans"
+          onClick={() => setShowQrisModal(false)}
+        >
+          <div
+            className="bg-slate-950 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-white text-center relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQrisModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 font-black text-lg"
+            >
+              ✕
+            </button>
+
+            <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-300 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+              <span>💸 Donasi QRIS DANA Studio.Buku.Biz.ID</span>
+            </div>
+
+            <h3 className="text-lg font-black text-amber-300">Dukung Penulis & Proyek Naskah</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Pindai / Scan QRIS DANA di bawah ini menggunakan aplikasi <strong>DANA, GoPay, OVO, ShopeePay, BCA, Mandiri, BRI, BNI</strong> atau m-banking / e-wallet lainnya.
+            </p>
+
+            <div className="bg-white p-3 rounded-xl border-2 border-amber-400 shadow-inner inline-block mx-auto max-w-[260px]">
+              <img
+                src="/QRIS-DANA.jpeg"
+                alt="QRIS DANA Pemilik Studio.Buku.Biz.ID"
+                className="w-full h-auto rounded-lg object-contain"
+              />
+            </div>
+
+            <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
+              <p className="font-bold text-amber-400">Penerima QRIS DANA: Studio.Buku.Biz.ID</p>
+              <p className="text-[11px] opacity-80">
+                Terima kasih atas donasi & dukungan Anda untuk keberlangsungan penulisan karya naskah ini!
+              </p>
             </div>
           </div>
         </div>

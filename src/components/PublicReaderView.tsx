@@ -88,6 +88,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
   const [readerTheme, setReaderTheme] = useState<"dark" | "sepia" | "light">("dark");
   const [activeGlossaryTerm, setActiveGlossaryTerm] = useState<GlossaryItem | null>(null);
   const [showFullGlossary, setShowFullGlossary] = useState<boolean>(false);
+  const [showQrisModal, setShowQrisModal] = useState<boolean>(false);
 
   // Parse path parameters
   const pathname = window.location.pathname; // e.g. /p/gema-di-ujung-senja/bab-1...
@@ -257,12 +258,19 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <a
-              href={`mailto:Roy.Wikan@gmail.com?subject=Dukungan%20/ %20Hibah%20/ %20Investasi%20Naskah%20${encodeURIComponent(project.title)}`}
-              className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-full text-xs font-black transition flex items-center space-x-1.5 shadow-md"
+              href={`mailto:Roy.Wikan@gmail.com?subject=Kontak%20Penulis%20Naskah%20${encodeURIComponent(project.title)}`}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/50 rounded-full text-xs font-black transition flex items-center space-x-1.5 shadow-md"
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Hubungi / Sponsori Penulis</span>
+              <span>Kontak Penulis</span>
             </a>
+
+            <button
+              onClick={() => setShowQrisModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-full text-xs font-black transition flex items-center space-x-1.5 shadow-md cursor-pointer"
+            >
+              <span>💸 Donasi QRIS DANA</span>
+            </button>
 
             {!isFullBook && (
               <a
@@ -389,14 +397,14 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
         )}
 
         {/* FOOTER */}
-        <footer className="pt-12 border-t border-slate-800 text-center font-sans text-xs opacity-70 space-y-2">
-          <p>
-            Dipublikasikan secara resmi melalui{" "}
-            <a href="https://studio.buku.biz.id" className="text-amber-400 font-bold hover:underline">
-              Studio Buku (studio.buku.biz.id)
+        <footer className="pt-12 border-t border-slate-800 text-center font-sans text-xs opacity-90 space-y-2">
+          <p className="font-bold text-amber-300">
+            Hak cipta milik : Roy.Wikan@gmail.com, Nulis Buku Bareng di{" "}
+            <a href="https://Studio.Buku.Biz.ID" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-400">
+              https://Studio.Buku.Biz.ID
             </a>
           </p>
-          <p>Draf Naskah Hak Cipta © 2026 Studio Buku. Seluruh hak cipta dilindungi undang-undang.</p>
+          <p className="text-[11px] opacity-75">Seluruh hak cipta dilindungi undang-undang.</p>
         </footer>
       </main>
 
@@ -472,6 +480,50 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
                   {g.aliases && <p className="text-[11px] italic text-slate-500">Alias: {g.aliases}</p>}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QRIS DANA DONATION MODAL */}
+      {showQrisModal && (
+        <div
+          className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 font-sans"
+          onClick={() => setShowQrisModal(false)}
+        >
+          <div
+            className="bg-slate-950 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-white text-center relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQrisModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 font-black text-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="inline-flex items-center space-x-2 bg-amber-500/20 text-amber-300 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+              <span>💸 Donasi QRIS DANA Studio.Buku.Biz.ID</span>
+            </div>
+
+            <h3 className="text-lg font-black text-amber-300">Dukung Penulis & Proyek Naskah</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Pindai / Scan QRIS DANA di bawah ini menggunakan aplikasi <strong>DANA, GoPay, OVO, ShopeePay, BCA, Mandiri, BRI, BNI</strong> atau m-banking / e-wallet lainnya.
+            </p>
+
+            <div className="bg-white p-3 rounded-xl border-2 border-amber-400 shadow-inner inline-block mx-auto max-w-[260px]">
+              <img
+                src="/QRIS-DANA.jpeg"
+                alt="QRIS DANA Pemilik Studio.Buku.Biz.ID"
+                className="w-full h-auto rounded-lg object-contain"
+              />
+            </div>
+
+            <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
+              <p className="font-bold text-amber-400">Penerima QRIS DANA: Studio.Buku.Biz.ID</p>
+              <p className="text-[11px] opacity-80">
+                Terima kasih atas donasi & dukungan Anda untuk keberlangsungan penulisan karya naskah ini!
+              </p>
             </div>
           </div>
         </div>
