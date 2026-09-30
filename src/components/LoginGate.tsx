@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StudioBukuLogo } from "./StudioBukuLogo";
 import { Lock, LogIn, Key, User, ShieldCheck, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { auth, googleProvider } from "../firebase";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
 
 export interface UserSession {
   email: string;
@@ -25,6 +25,23 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState("");
   const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Listen to Firebase Auth state changes automatically
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const session: UserSession = {
+          email: user.email || "penulis@gmail.com",
+          name: user.displayName || user.email?.split("@")[0] || "Penulis Google",
+          avatar: user.photoURL || "👨‍💻",
+          authMethod: "google",
+          loginTime: new Date().toLocaleTimeString("id-ID")
+        };
+        onLoginSuccess(session);
+      }
+    });
+    return () => unsubscribe();
+  }, [onLoginSuccess]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
