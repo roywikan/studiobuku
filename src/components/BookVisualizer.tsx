@@ -38,8 +38,21 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
   const totalWords = chapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
   const currentChapter = chapters[activeChapterIndex] || chapters[0];
 
-  const chapterPublicUrl = `${window.location.origin}/public/chapter/${currentChapter?.id || ''}`;
-  const projectPublicUrl = `${window.location.origin}/public/project/${project.id}`;
+  const slugify = (text: string) => {
+    return (text || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "naskah";
+  };
+
+  const PUBLIC_DOMAIN = "https://studio.buku.biz";
+  const projSlug = slugify(project.title);
+  const chapSlug = currentChapter ? slugify(currentChapter.title) : "bab-1";
+
+  const chapterPublicUrl = `${PUBLIC_DOMAIN}/p/${projSlug}/${chapSlug}`;
+  const projectPublicUrl = `${PUBLIC_DOMAIN}/p/${projSlug}`;
 
   const handleCopy = (url: string, type: "chapter" | "project") => {
     navigator.clipboard.writeText(url);
@@ -820,7 +833,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Link HTML Publik dapat dibuka langsung secara eksternal oleh <strong>beta reader, editor profesional, kritikus, atau penerbit</strong> tanpa perlu masuk/login ke UI Studio Buku.
+              Tautan HTML Publik domain resmi <strong>studio.buku.biz</strong> dirancang khusus untuk menarik minat <strong>akademisi, investor, donatur hibah penulisan, penerbit, dan editor profesional</strong>. Tautan ini mendukung SEO lengkap & crawling Google Bot.
             </p>
 
             <div className="space-y-4">

@@ -420,12 +420,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {isMobileNavFolded ? (
           <div
             onClick={() => setIsMobileNavFolded(false)}
-            className="lg:hidden py-1.5 px-3 border-t border-white/15 flex items-center justify-between cursor-pointer bg-slate-950/80 hover:bg-slate-900 transition text-amber-300 font-black text-[11px]"
+            className="lg:hidden py-1.5 px-3 border-t border-white/15 flex items-center justify-between cursor-pointer bg-slate-950/90 hover:bg-slate-900 transition text-amber-300 font-black text-[11px] gap-2"
             title="Ketuk / Sentuh untuk Buka Bilah Menu Header"
           >
-            <div className="flex items-center space-x-2 truncate">
-              <StudioBukuLogo size="sm" />
-              <span className="truncate">{project.title}</span>
+            <div className="truncate flex items-center space-x-1.5">
+              <span className="text-xs font-black text-amber-300 truncate">
+                {project.title}
+              </span>
+              {project.genre && (
+                <span className="text-[10px] font-semibold text-slate-400 truncate hidden sm:inline">
+                  • {project.genre}
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-1 text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30 shrink-0 font-extrabold">
               <span>Buka Menu</span>

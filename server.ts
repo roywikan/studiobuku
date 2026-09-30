@@ -581,60 +581,226 @@ async function startServer() {
     res.json({ success: true, count: createdChapters.length, chapters: createdChapters });
   });
 
-  // PUBLIC READER ENDPOINTS FOR EXTERNAL AUDIENCES (CHAPTER / FULL PROJECT) WITH GLOSSARY LINKING
-  app.get("/public/chapter/:chapterId", (req, res) => {
-    const db = readDb();
-    const chapter = db.chapters.find(c => c.id === req.params.chapterId);
-    if (!chapter) {
-      return res.status(404).send(`
-        <!DOCTYPE html>
-        <html>
-          <head><title>Bab Tidak Ditemukan - Studio Buku</title><meta charset="utf-8"/></head>
-          <body style="font-family:sans-serif; text-align:center; padding:50px; background:#111827; color:#f3f4f6;">
-            <h1>404 - Bab Tidak Ditemukan</h1>
-            <p>Bab naskah ini telah dihapus atau tidak tersedia.</p>
-          </body>
-        </html>
-      `);
+  // Helper functions for SEO & Public Preview HTML
+  function slugify(text: string): string {
+    return (text || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "naskah";
+  }
+
+  function escapeHtml(str: string): string {
+    return (str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function renderPublicPreviewHtml(db: DB, projectSlugInput: string, chapterSlugInput?: string): string {
+    const cleanProjSlug = (projectSlugInput || "").toLowerCase();
+    const project = db.projects.find(p => p.id === projectSlugInput || slugify(p.title) === cleanProjSlug) || db.projects[0];
+    if (!project) {
+      return `<!DOCTYPE html><html lang="id"><head><title>Proyek Tidak Ditemukan - Studio Buku</title></head><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;text-align:center;padding:50px;"><h1>404 - Proyek Naskah Tidak Ditemukan</h1><p><a href="https://studio.buku.biz" style="color:#fbbf24;">Kembali ke Studio Buku</a></p></body></html>`;
     }
 
-    const project = db.projects.find(p => p.id === chapter.projectId) || db.projects[0];
+    const projChapters = db.chapters.filter(c => c.projectId === project.id).sort((a,b) => a.order - b.order);
     const projGlossary = (db.glossary || []).filter(g => g.projectId === project.id);
 
-    const wordCount = chapter.content.trim().split(/\s+/).filter(Boolean).length;
+    let activeChapter: Chapter | undefined;
+    if (chapterSlugInput) {
+      const cleanChapSlug = chapterSlugInput.toLowerCase();
+      activeChapter = projChapters.find(c => c.id === chapterSlugInput || slugify(c.title) === cleanChapSlug);
+    }
+
+    const isFullBook = !activeChapter;
+    const currentChap = activeChapter || projChapters[0] || {
+      id: "chap_1",
+      title: "Bab 1",
+      subtitle: "",
+      content: "Isi naskah sedang disiapkan.",
+      order: 1,
+      status: "draft",
+      lastEditedBy: "Studio Buku",
+      updatedAt: new Date().toISOString()
+    };
+
+    const projSlugClean = slugify(project.title);
+    const chapSlugClean = currentChap ? slugify(currentChap.title) : "bab-1";
+
+    const BASE_DOMAIN = "https://studio.buku.biz";
+    const canonicalUrl = isFullBook
+      ? `${BASE_DOMAIN}/p/${projSlugClean}`
+      : `${BASE_DOMAIN}/p/${projSlugClean}/${chapSlugClean}`;
+    const projectCanonicalUrl = `${BASE_DOMAIN}/p/${projSlugClean}`;
+
+    const pageTitle = isFullBook
+      ? `${project.title} — Full Naskah & Proposal Penulisan | Studio Buku`
+      : `${currentChap.title} | Naskah "${project.title}" — Studio Buku`;
+
+    const pageDesc = isFullBook
+      ? `Draf Lengkap & Proposal Naskah "${project.title}". Genre: ${project.genre}. ${project.synopsis}`
+      : `${currentChap.title} — ${currentChap.subtitle || project.synopsis}`;
+
+    const wordCount = isFullBook
+      ? projChapters.reduce((acc, c) => acc + (c.content ? c.content.trim().split(/\s+/).filter(Boolean).length : 0), 0)
+      : (currentChap.content ? currentChap.content.trim().split(/\s+/).filter(Boolean).length : 0);
+
     const readTime = Math.ceil(wordCount / 200);
 
-    const rawParagraphs = chapter.content.split(/\n\s*\n/);
-    const paragraphs = rawParagraphs.map(p => {
-      const linked = linkifyGlossary(p, projGlossary);
-      return `<p style="margin-bottom: 1.5em; text-indent: 1.5em; line-height: 1.8; font-size: 1.15rem;">${linked.replace(/\n/g, "<br/>")}</p>`;
-    }).join("");
+    let contentHtml = "";
+    if (isFullBook) {
+      contentHtml = projChapters.map((c, idx) => {
+        const rawParas = (c.content || "").split(/\n\s*\n/);
+        const paras = rawParas.map(p => {
+          const linked = linkifyGlossary(p, projGlossary);
+          return `<p style="margin-bottom: 1.5em; text-indent: 1.5em; line-height: 1.8; font-size: 1.15rem;">${linked.replace(/\n/g, "<br/>")}</p>`;
+        }).join("");
+
+        return `
+          <section id="${slugify(c.title)}" style="margin-top: 50px; padding-top: 30px; border-top: 2px dashed var(--border);">
+            <div style="font-size: 0.8rem; font-family: system-ui; text-transform: uppercase; color: var(--accent); font-weight: 800; letter-spacing: 0.05em;">
+              BAB ${idx + 1}
+            </div>
+            <h2 style="font-size: 1.8rem; margin-top: 6px; margin-bottom: 8px; font-weight: 900; color: var(--accent);">${escapeHtml(c.title)}</h2>
+            ${c.subtitle ? `<div style="font-style: italic; opacity: 0.85; margin-bottom: 24px; font-size: 1.05rem;">${escapeHtml(c.subtitle)}</div>` : ""}
+            <div>${paras}</div>
+          </section>
+        `;
+      }).join("");
+    } else {
+      const rawParagraphs = (currentChap.content || "").split(/\n\s*\n/);
+      contentHtml = rawParagraphs.map(p => {
+        const linked = linkifyGlossary(p, projGlossary);
+        return `<p style="margin-bottom: 1.5em; text-indent: 1.5em; line-height: 1.8; font-size: 1.15rem;">${linked.replace(/\n/g, "<br/>")}</p>`;
+      }).join("");
+    }
+
+    let chapterNavHtml = "";
+    if (!isFullBook && projChapters.length > 1) {
+      const currentIndex = projChapters.findIndex(c => c.id === currentChap.id);
+      const prevChap = projChapters[currentIndex - 1];
+      const nextChap = projChapters[currentIndex + 1];
+
+      chapterNavHtml = `
+        <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-family: system-ui, sans-serif; font-size: 0.85rem;">
+          ${prevChap ? `<a href="${BASE_DOMAIN}/p/${projSlugClean}/${slugify(prevChap.title)}" style="color: var(--accent); font-weight: bold; text-decoration: none;">&larr; Bab Sebelumnya: ${escapeHtml(prevChap.title)}</a>` : `<span></span>`}
+          ${nextChap ? `<a href="${BASE_DOMAIN}/p/${projSlugClean}/${slugify(nextChap.title)}" style="color: var(--accent); font-weight: bold; text-decoration: none;">Bab Selanjutnya: ${escapeHtml(nextChap.title)} &rarr;</a>` : `<span></span>`}
+        </div>
+      `;
+    }
+
+    const tocHtml = projChapters.map((c, idx) => `
+      <li style="margin-bottom: 8px; font-family: system-ui, sans-serif;">
+        <a href="${BASE_DOMAIN}/p/${projSlugClean}/${slugify(c.title)}" style="color: var(--accent); font-weight: 800; text-decoration: none; font-size: 0.95rem;">
+          Bab ${idx + 1}: ${escapeHtml(c.title)}
+        </a>
+        ${c.subtitle ? `<span style="font-size: 0.85rem; opacity: 0.8; font-style: italic; margin-left: 6px;">— ${escapeHtml(c.subtitle)}</span>` : ""}
+      </li>
+    `).join("");
 
     const glossaryCardsHtml = projGlossary.map(g => `
-      <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px 15px; border-radius: 10px; margin-bottom: 10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-          <strong style="color: var(--accent); font-size: 0.95rem;">${g.term}</strong>
-          <span style="font-size: 0.7rem; background: rgba(245,158,11,0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-family: system-ui; font-weight: bold;">${g.category}</span>
+      <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+          <strong style="color: var(--accent); font-size: 1rem;">${escapeHtml(g.term)}</strong>
+          <span style="font-size: 0.75rem; background: rgba(245,158,11,0.2); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-family: system-ui; font-weight: 800;">${escapeHtml(g.category)}</span>
         </div>
-        <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.4;">${g.definition}</div>
-        ${g.aliases ? `<div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px; font-style: italic;">Sebutan lain: ${g.aliases}</div>` : ""}
+        <div style="font-size: 0.9rem; opacity: 0.95; line-height: 1.5; font-family: system-ui;">${escapeHtml(g.definition)}</div>
+        ${g.aliases ? `<div style="font-size: 0.75rem; opacity: 0.65; margin-top: 6px; font-style: italic; font-family: system-ui;">Sebutan lain: ${escapeHtml(g.aliases)}</div>` : ""}
       </div>
     `).join("");
 
-    const html = `
+    const jsonLdData = {
+      "@context": "https://schema.org",
+      "@type": "Book",
+      "@id": `${projectCanonicalUrl}#book`,
+      "url": canonicalUrl,
+      "name": project.title,
+      "headline": isFullBook ? project.title : currentChap.title,
+      "genre": project.genre,
+      "description": project.synopsis,
+      "inLanguage": "id",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Studio Buku",
+        "url": "https://studio.buku.biz",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://studio.buku.biz/studio-buku-logo.jpg"
+        }
+      },
+      "author": {
+        "@type": "Person",
+        "name": currentChap ? currentChap.lastEditedBy || "Penulis Studio Buku" : "Penulis Studio Buku"
+      },
+      "hasPart": projChapters.map(c => ({
+        "@type": "Chapter",
+        "@id": `${BASE_DOMAIN}/p/${projSlugClean}/${slugify(c.title)}#chapter`,
+        "name": c.title,
+        "position": c.order,
+        "description": c.subtitle || "",
+        "url": `${BASE_DOMAIN}/p/${projSlugClean}/${slugify(c.title)}`
+      })),
+      "potentialAction": [
+        {
+          "@type": "DonateAction",
+          "name": "Sponsori / Dukung Penulis (Investor & Donatur)",
+          "target": "mailto:Roy.Wikan@gmail.com?subject=Sponsorship%20Naskah%20Studio%20Buku"
+        },
+        {
+          "@type": "ReadAction",
+          "target": canonicalUrl
+        }
+      ]
+    };
+
+    return `
       <!DOCTYPE html>
       <html lang="id">
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${chapter.title} - ${project.title}</title>
+          
+          <!-- SEO Core Meta Tags -->
+          <title>${escapeHtml(pageTitle)}</title>
+          <meta name="description" content="${escapeHtml(pageDesc)}" />
+          <meta name="keywords" content="${escapeHtml(project.title)}, ${escapeHtml(project.genre)}, Naskah Buku, Studio Buku, Proposal Penulisan, Donor Buku, Investor Naskah" />
+          <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+          <link rel="canonical" href="${canonicalUrl}" />
+
+          <!-- OpenGraph Social Cards -->
+          <meta property="og:type" content="book" />
+          <meta property="og:title" content="${escapeHtml(pageTitle)}" />
+          <meta property="og:description" content="${escapeHtml(pageDesc)}" />
+          <meta property="og:url" content="${canonicalUrl}" />
+          <meta property="og:site_name" content="Studio Buku" />
+          <meta property="og:image" content="https://studio.buku.biz/studio-buku-logo.jpg" />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:locale" content="id_ID" />
+
+          <!-- Twitter Card Meta Tags -->
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="${escapeHtml(pageTitle)}" />
+          <meta name="twitter:description" content="${escapeHtml(pageDesc)}" />
+          <meta name="twitter:image" content="https://studio.buku.biz/studio-buku-logo.jpg" />
+
+          <!-- Schema.org JSON-LD Structured Data for Google Bot Crawling -->
+          <script type="application/ld+json">
+            ${JSON.stringify(jsonLdData, null, 2)}
+          </script>
+
           <style>
             :root {
-              --bg: #111827;
-              --text: #f3f4f6;
-              --paper: #1f2937;
-              --border: #374151;
-              --accent: #f59e0b;
+              --bg: #0f172a;
+              --text: #f8fafc;
+              --paper: #1e293b;
+              --border: #334155;
+              --accent: #fbbf24;
+              --accent-glow: rgba(251, 191, 36, 0.2);
             }
             body.sepia {
               --bg: #f4ecd8;
@@ -642,13 +808,15 @@ async function startServer() {
               --paper: #fbf0d9;
               --border: #e2d3b5;
               --accent: #b45309;
+              --accent-glow: rgba(180, 83, 9, 0.15);
             }
             body.light {
-              --bg: #f9fafb;
-              --text: #111827;
+              --bg: #f8fafc;
+              --text: #0f172a;
               --paper: #ffffff;
-              --border: #e5e7eb;
+              --border: #e2e8f0;
               --accent: #d97706;
+              --accent-glow: rgba(217, 119, 6, 0.15);
             }
             body {
               background-color: var(--bg);
@@ -656,83 +824,109 @@ async function startServer() {
               font-family: 'Merriweather', Georgia, 'Times New Roman', serif;
               margin: 0;
               padding: 0;
+              line-height: 1.7;
               transition: all 0.3s ease;
             }
             .header-bar {
               position: sticky;
               top: 0;
               background: var(--paper);
-              border-bottom: 1px solid var(--border);
-              padding: 12px 20px;
+              border-bottom: 2px solid var(--border);
+              padding: 12px 24px;
               display: flex;
               align-items: center;
               justify-content: space-between;
-              font-family: system-ui, sans-serif;
+              font-family: system-ui, -apple-system, sans-serif;
               font-size: 0.85rem;
               z-index: 100;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             }
-            .controls button {
+            .controls button, .controls a {
               background: transparent;
               border: 1px solid var(--border);
               color: var(--text);
-              padding: 6px 12px;
+              padding: 6px 14px;
               border-radius: 20px;
               cursor: pointer;
-              font-weight: bold;
+              font-weight: 800;
               font-size: 0.75rem;
+              text-decoration: none;
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+            }
+            .controls button:hover, .controls a:hover {
+              border-color: var(--accent);
+              color: var(--accent);
+            }
+            .academic-sponsor-banner {
+              background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+              border: 2px solid var(--accent);
+              border-radius: 16px;
+              padding: 20px 24px;
+              margin-bottom: 30px;
+              font-family: system-ui, -apple-system, sans-serif;
             }
             .glossary-link {
-              background-color: rgba(245, 158, 11, 0.22);
+              background-color: var(--accent-glow);
               border-bottom: 2px solid var(--accent);
               color: inherit;
-              font-weight: bold;
-              padding: 0 3px;
+              font-weight: 800;
+              padding: 0 4px;
               border-radius: 4px;
               cursor: pointer;
               transition: all 0.2s ease;
             }
             .glossary-link:hover {
               background-color: var(--accent);
-              color: #111827;
+              color: #0f172a;
             }
             .container {
-              max-width: 760px;
+              max-width: 820px;
               margin: 40px auto;
-              padding: 40px 30px;
+              padding: 45px 36px;
               background-color: var(--paper);
-              border-radius: 16px;
+              border-radius: 20px;
               border: 1px solid var(--border);
-              box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+              box-shadow: 0 15px 35px rgba(0,0,0,0.25);
             }
-            .title {
-              font-size: 2rem;
+            .project-title {
+              font-size: 2.2rem;
               font-weight: 900;
               color: var(--accent);
-              margin-bottom: 8px;
-              line-height: 1.2;
+              margin-bottom: 6px;
+              line-height: 1.25;
             }
             .subtitle {
-              font-size: 1.1rem;
+              font-size: 1.15rem;
               font-style: italic;
-              opacity: 0.8;
+              opacity: 0.85;
               margin-bottom: 20px;
             }
-            .meta {
-              font-family: system-ui, sans-serif;
-              font-size: 0.8rem;
-              opacity: 0.7;
+            .meta-info {
+              font-family: system-ui, -apple-system, sans-serif;
+              font-size: 0.85rem;
+              opacity: 0.8;
               border-bottom: 1px solid var(--border);
-              padding-bottom: 16px;
+              padding-bottom: 18px;
               margin-bottom: 30px;
               display: flex;
-              gap: 15px;
+              flex-wrap: wrap;
+              gap: 16px;
+            }
+            .toc-box {
+              background: rgba(0,0,0,0.2);
+              border: 1px dashed var(--accent);
+              padding: 20px 24px;
+              border-radius: 14px;
+              margin-bottom: 35px;
             }
             .modal-overlay {
               display: none;
               position: fixed;
               inset: 0;
-              background: rgba(0,0,0,0.75);
-              backdrop-filter: blur(4px);
+              background: rgba(0,0,0,0.8);
+              backdrop-filter: blur(6px);
               z-index: 200;
               align-items: center;
               justify-content: center;
@@ -741,32 +935,34 @@ async function startServer() {
             .modal-box {
               background: var(--paper);
               border: 2px solid var(--accent);
-              border-radius: 16px;
-              max-width: 480px;
+              border-radius: 20px;
+              max-width: 520px;
               width: 100%;
-              padding: 24px;
-              box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-              font-family: system-ui, sans-serif;
+              padding: 28px;
+              box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+              font-family: system-ui, -apple-system, sans-serif;
             }
             .footer {
-              margin-top: 50px;
-              padding-top: 20px;
+              margin-top: 60px;
+              padding-top: 24px;
               border-top: 1px solid var(--border);
               text-align: center;
-              font-family: system-ui, sans-serif;
-              font-size: 0.8rem;
-              opacity: 0.7;
+              font-family: system-ui, -apple-system, sans-serif;
+              font-size: 0.85rem;
+              opacity: 0.8;
+              line-height: 1.6;
             }
             @media print {
-              .header-bar { display: none; }
-              .container { border: none; box-shadow: none; background: white; color: black; max-width: 100%; }
+              .header-bar, .academic-sponsor-banner, .controls { display: none; }
+              .container { border: none; box-shadow: none; background: white; color: black; max-width: 100%; margin: 0; padding: 0; }
             }
           </style>
         </head>
         <body class="dark">
+          <!-- Header Bar -->
           <div class="header-bar">
-            <div>
-              <strong>📖 Studio Buku Reader</strong> — ${project.title}
+            <div style="font-weight: 900; font-size: 0.95rem; color: var(--accent);">
+              <a href="${projectCanonicalUrl}" style="color: inherit; text-decoration: none;">📚 Studio Buku</a> — ${escapeHtml(project.title)}
             </div>
             <div class="controls">
               <button onclick="openFullGlossaryDrawer()">📖 Glosarium (${projGlossary.length})</button>
@@ -778,57 +974,102 @@ async function startServer() {
           </div>
 
           <div class="container">
-            <div class="title">${chapter.title}</div>
-            ${chapter.subtitle ? `<div class="subtitle">${chapter.subtitle}</div>` : ""}
-            <div class="meta">
-              <span>📚 Naskah: ${project.title}</span>
-              <span>📝 ${wordCount.toLocaleString("id-ID")} Kata</span>
-              <span>⏱️ ~${readTime} menit baca</span>
+            <!-- Banner Khusus Akademisi, Investor & Donatur -->
+            <div class="academic-sponsor-banner" id="sponsor">
+              <div style="font-size:0.75rem; text-transform:uppercase; font-weight:900; color:var(--accent); letter-spacing:0.05em; margin-bottom:4px;">
+                🎓 Ruang Peninjauan Akademisi, Investor & Donatur Naskah
+              </div>
+              <h2 style="font-size:1.25rem; font-weight:900; margin:0 0 6px 0; color:var(--text);">
+                ${escapeHtml(project.title)}
+              </h2>
+              <p style="font-size:0.88rem; opacity:0.9; margin:0 0 16px 0; line-height:1.5; font-family:system-ui;">
+                ${escapeHtml(project.synopsis)}
+              </p>
+              <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-family:system-ui;">
+                <a href="mailto:Roy.Wikan@gmail.com?subject=Dukungan%20/ %20Hibah%20/ %20Investasi%20Naskah%20${encodeURIComponent(project.title)}" 
+                   style="background:var(--accent); color:#0f172a; padding:8px 18px; border-radius:20px; font-weight:900; text-decoration:none; font-size:0.8rem; shadow:0 4px 12px rgba(0,0,0,0.2);">
+                   ✉️ Hubungi / Sponsori Penulis
+                </a>
+                <a href="${projectCanonicalUrl}" 
+                   style="background:rgba(255,255,255,0.1); color:var(--text); padding:8px 18px; border-radius:20px; font-weight:800; text-decoration:none; font-size:0.8rem; border:1px solid var(--border);">
+                   📖 Lihat Seluruh Draf Bab (${projChapters.length} Bab)
+                </a>
+              </div>
             </div>
 
-            <div style="background: rgba(245,158,11,0.1); border-left: 3px solid var(--accent); padding: 10px 15px; font-family: system-ui; font-size: 0.8rem; margin-bottom: 25px; border-radius: 6px;">
-              💡 <strong>Petunjuk Pembaca / Reviewer:</strong> Istilah atau nama karakter yang digarisbawahi kuning (<span class="glossary-link">seperti ini</span>) dapat diklik untuk melihat penjelasan Glosarium Naskah dari penulis.
+            <!-- Main Document Title -->
+            <h1 class="project-title">${isFullBook ? escapeHtml(project.title) : escapeHtml(currentChap.title)}</h1>
+            ${!isFullBook && currentChap.subtitle ? `<div class="subtitle">${escapeHtml(currentChap.subtitle)}</div>` : ""}
+            ${isFullBook && project.subtitle ? `<div class="subtitle">${escapeHtml(project.subtitle)}</div>` : ""}
+
+            <div class="meta-info">
+              <span>📚 <strong>Naskah:</strong> ${escapeHtml(project.title)}</span>
+              <span>🏷️ <strong>Genre:</strong> ${escapeHtml(project.genre)}</span>
+              <span>📝 <strong>Volume:</strong> ${wordCount.toLocaleString("id-ID")} Kata</span>
+              <span>⏱️ <strong>Estimasi Baca:</strong> ~${readTime} menit</span>
+              <span>✍️ <strong>Penulis:</strong> ${escapeHtml(currentChap ? currentChap.lastEditedBy : "Studio Buku")}</span>
             </div>
 
+            <!-- Table of Contents for Full Book view -->
+            ${isFullBook ? `
+              <div class="toc-box">
+                <h3 style="margin:0 0 12px 0; font-size:1.1rem; color:var(--accent); font-family:system-ui; font-weight:900;">📋 Daftar Isi Naskah</h3>
+                <ol style="margin:0; padding-left:20px;">
+                  ${tocHtml}
+                </ol>
+              </div>
+            ` : ""}
+
+            <div style="background: var(--accent-glow); border-left: 4px solid var(--accent); padding: 12px 18px; font-family: system-ui, sans-serif; font-size: 0.85rem; margin-bottom: 30px; border-radius: 8px;">
+              💡 <strong>Petunjuk Peninjau / Pembaca:</strong> Nama tokoh atau istilah bergaris bawah (<span class="glossary-link">seperti ini</span>) dapat diklik untuk membuka penjelasan Glosarium Naskah dari penulis.
+            </div>
+
+            <!-- Chapter Content Body -->
             <div class="content">
-              ${paragraphs}
+              ${contentHtml}
             </div>
 
+            <!-- Single Chapter Navigation -->
+            ${chapterNavHtml}
+
+            <!-- Footer -->
             <div class="footer">
-              Dipublikasikan melalui Studio Buku (Nulis Bareng Studio)
+              Dipublikasikan secara resmi melalui <strong><a href="https://studio.buku.biz" style="color:var(--accent); text-decoration:none;">Studio Buku (studio.buku.biz)</a></strong><br/>
+              Draf Naskah Hak Cipta © 2026 Studio Buku. Seluruh hak cipta dilindungi undang-undang.<br/>
+              Untuk keperluan riset akademis, hibah penulisan, atau investasi penerbitan, hubungi: <a href="mailto:Roy.Wikan@gmail.com" style="color:var(--accent);">Roy.Wikan@gmail.com</a>
             </div>
           </div>
 
           <!-- GLOSSARY CARD POPUP MODAL -->
           <div id="glossary-modal" class="modal-overlay" onclick="closeGlossaryModal()">
             <div class="modal-box" onclick="event.stopPropagation()">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
                 <div>
-                  <span id="modal-category" style="background: rgba(245,158,11,0.2); color: var(--accent); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">Kategori</span>
-                  <h3 id="modal-term" style="font-size: 1.4rem; margin: 8px 0 0 0; color: var(--accent);">Nama Istilah</h3>
+                  <span id="modal-category" style="background: rgba(245,158,11,0.2); color: var(--accent); padding: 3px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">Kategori</span>
+                  <h3 id="modal-term" style="font-size: 1.5rem; margin: 8px 0 0 0; color: var(--accent); font-weight: 900;">Nama Istilah</h3>
                 </div>
-                <button onclick="closeGlossaryModal()" style="background:none; border:none; color:var(--text); font-size: 1.2rem; cursor:pointer; font-weight:bold;">✕</button>
+                <button onclick="closeGlossaryModal()" style="background:none; border:none; color:var(--text); font-size: 1.3rem; cursor:pointer; font-weight:bold;">✕</button>
               </div>
 
-              <div id="modal-definition" style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px; opacity: 0.95;">
+              <div id="modal-definition" style="font-size: 1rem; line-height: 1.6; margin-bottom: 18px; opacity: 0.95;">
                 Definisi istilah...
               </div>
 
-              <div id="modal-aliases" style="font-size: 0.8rem; opacity: 0.7; font-style: italic; border-top: 1px solid var(--border); padding-top: 10px;">
+              <div id="modal-aliases" style="font-size: 0.85rem; opacity: 0.7; font-style: italic; border-top: 1px solid var(--border); padding-top: 12px;">
               </div>
             </div>
           </div>
 
           <!-- FULL GLOSSARY DRAWER MODAL -->
           <div id="full-glossary-modal" class="modal-overlay" onclick="closeFullGlossaryDrawer()">
-            <div class="modal-box" style="max-width: 600px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
-                <h3 style="margin:0; font-size: 1.2rem; color: var(--accent);">📖 Glosarium Naskah (${projGlossary.length} Istilah)</h3>
-                <button onclick="closeFullGlossaryDrawer()" style="background:none; border:none; color:var(--text); font-size: 1.2rem; cursor:pointer; font-weight:bold;">✕</button>
+            <div class="modal-box" style="max-width: 620px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 18px;">
+                <h3 style="margin:0; font-size: 1.3rem; color: var(--accent); font-weight: 900;">📖 Glosarium Naskah (${projGlossary.length} Istilah)</h3>
+                <button onclick="closeFullGlossaryDrawer()" style="background:none; border:none; color:var(--text); font-size: 1.3rem; cursor:pointer; font-weight:bold;">✕</button>
               </div>
 
               <div style="margin-bottom: 15px;">
-                ${glossaryCardsHtml.length > 0 ? glossaryCardsHtml : '<div style="opacity:0.7; font-size:0.85rem;">Belum ada istilah glosarium yang ditambahkan untuk proyek ini.</div>'}
+                ${glossaryCardsHtml.length > 0 ? glossaryCardsHtml : '<div style="opacity:0.7; font-size:0.9rem;">Belum ada istilah glosarium yang ditambahkan untuk proyek ini.</div>'}
               </div>
             </div>
           </div>
@@ -861,316 +1102,55 @@ async function startServer() {
         </body>
       </html>
     `;
+  }
+
+  // 1. PUBLIC SEO DOMAIN ENDPOINTS: https://studio.buku.biz/p/:projectSlug/:chapterSlug
+  app.get("/p/:projectSlug/:chapterSlug", (req, res) => {
+    const db = readDb();
+    const html = renderPublicPreviewHtml(db, req.params.projectSlug, req.params.chapterSlug);
+    res.send(html);
+  });
+
+  app.get("/buku/:projectSlug/:chapterSlug", (req, res) => {
+    const db = readDb();
+    const html = renderPublicPreviewHtml(db, req.params.projectSlug, req.params.chapterSlug);
+    res.send(html);
+  });
+
+  // 2. PUBLIC SEO DOMAIN ENDPOINTS FOR FULL BOOK: https://studio.buku.biz/p/:projectSlug
+  app.get("/p/:projectSlug", (req, res) => {
+    const db = readDb();
+    const html = renderPublicPreviewHtml(db, req.params.projectSlug);
+    res.send(html);
+  });
+
+  app.get("/buku/:projectSlug", (req, res) => {
+    const db = readDb();
+    const html = renderPublicPreviewHtml(db, req.params.projectSlug);
+    res.send(html);
+  });
+
+  // 3. LEGACY ENDPOINTS WITH REDIRECT / CANONICAL MATCHING
+  app.get("/public/chapter/:chapterId", (req, res) => {
+    const db = readDb();
+    const chapter = db.chapters.find(c => c.id === req.params.chapterId);
+    if (!chapter) {
+      return res.status(404).send("<h1>404 - Bab Tidak Ditemukan</h1>");
+    }
+    const project = db.projects.find(p => p.id === chapter.projectId) || db.projects[0];
+    const projSlug = slugify(project.title);
+    const chapSlug = slugify(chapter.title);
+
+    const html = renderPublicPreviewHtml(db, projSlug, chapSlug);
     res.send(html);
   });
 
   app.get("/public/project/:projectId", (req, res) => {
     const db = readDb();
     const project = db.projects.find(p => p.id === req.params.projectId) || db.projects[0];
-    const projChapters = db.chapters.filter(c => c.projectId === project.id).sort((a,b) => a.order - b.order);
-    const projGlossary = (db.glossary || []).filter(g => g.projectId === project.id);
+    const projSlug = slugify(project.title);
 
-    const totalWords = projChapters.reduce((acc, c) => acc + (c.content ? c.content.trim().split(/\s+/).filter(Boolean).length : 0), 0);
-    const totalReadMins = Math.ceil(totalWords / 200);
-
-    const tocHtml = projChapters.map((c, idx) => `
-      <li style="margin-bottom: 8px;">
-        <a href="#chap-${c.id}" style="color: var(--accent); text-decoration: none; font-weight: bold;">
-          Bab ${idx + 1}: ${c.title}
-        </a>
-      </li>
-    `).join("");
-
-    const chaptersBodyHtml = projChapters.map((c, idx) => {
-      const rawParas = c.content.split(/\n\s*\n/);
-      const paras = rawParas.map(p => {
-        const linked = linkifyGlossary(p, projGlossary);
-        return `<p style="margin-bottom: 1.5em; text-indent: 1.5em; line-height: 1.8; font-size: 1.15rem;">${linked.replace(/\n/g, "<br/>")}</p>`;
-      }).join("");
-
-      return `
-        <section id="chap-${c.id}" style="margin-top: 60px; padding-top: 30px; border-top: 2px dashed var(--border);">
-          <div style="font-size: 0.85rem; font-family: system-ui; text-transform: uppercase; color: var(--accent); font-weight: bold;">
-            BAB ${idx + 1}
-          </div>
-          <h2 style="font-size: 1.8rem; margin-top: 5px; margin-bottom: 10px;">${c.title}</h2>
-          ${c.subtitle ? `<div style="font-style: italic; opacity: 0.8; margin-bottom: 20px;">${c.subtitle}</div>` : ""}
-          <div>${paras}</div>
-        </section>
-      `;
-    }).join("");
-
-    const glossaryCardsHtml = projGlossary.map(g => `
-      <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 12px 15px; border-radius: 10px; margin-bottom: 10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-          <strong style="color: var(--accent); font-size: 0.95rem;">${g.term}</strong>
-          <span style="font-size: 0.7rem; background: rgba(245,158,11,0.2); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-family: system-ui; font-weight: bold;">${g.category}</span>
-        </div>
-        <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.4;">${g.definition}</div>
-        ${g.aliases ? `<div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px; font-style: italic;">Sebutan lain: ${g.aliases}</div>` : ""}
-      </div>
-    `).join("");
-
-    const html = `
-      <!DOCTYPE html>
-      <html lang="id">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${project.title} - Full Book Reader</title>
-          <style>
-            :root {
-              --bg: #111827;
-              --text: #f3f4f6;
-              --paper: #1f2937;
-              --border: #374151;
-              --accent: #f59e0b;
-            }
-            body.sepia {
-              --bg: #f4ecd8;
-              --text: #3c2f2f;
-              --paper: #fbf0d9;
-              --border: #e2d3b5;
-              --accent: #b45309;
-            }
-            body.light {
-              --bg: #f9fafb;
-              --text: #111827;
-              --paper: #ffffff;
-              --border: #e5e7eb;
-              --accent: #d97706;
-            }
-            body {
-              background-color: var(--bg);
-              color: var(--text);
-              font-family: 'Merriweather', Georgia, 'Times New Roman', serif;
-              margin: 0;
-              padding: 0;
-              transition: all 0.3s ease;
-            }
-            .header-bar {
-              position: sticky;
-              top: 0;
-              background: var(--paper);
-              border-bottom: 1px solid var(--border);
-              padding: 12px 20px;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              font-family: system-ui, sans-serif;
-              font-size: 0.85rem;
-              z-index: 100;
-            }
-            .controls button {
-              background: transparent;
-              border: 1px solid var(--border);
-              color: var(--text);
-              padding: 6px 12px;
-              border-radius: 20px;
-              cursor: pointer;
-              font-weight: bold;
-              font-size: 0.75rem;
-            }
-            .glossary-link {
-              background-color: rgba(245, 158, 11, 0.22);
-              border-bottom: 2px solid var(--accent);
-              color: inherit;
-              font-weight: bold;
-              padding: 0 3px;
-              border-radius: 4px;
-              cursor: pointer;
-              transition: all 0.2s ease;
-            }
-            .glossary-link:hover {
-              background-color: var(--accent);
-              color: #111827;
-            }
-            .container {
-              max-width: 800px;
-              margin: 40px auto;
-              padding: 50px 40px;
-              background-color: var(--paper);
-              border-radius: 16px;
-              border: 1px solid var(--border);
-              box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            }
-            .book-title {
-              font-size: 2.5rem;
-              font-weight: 900;
-              color: var(--accent);
-              margin-bottom: 10px;
-              text-align: center;
-              line-height: 1.2;
-            }
-            .book-subtitle {
-              font-size: 1.2rem;
-              font-style: italic;
-              text-align: center;
-              opacity: 0.8;
-              margin-bottom: 25px;
-            }
-            .book-meta {
-              font-family: system-ui, sans-serif;
-              font-size: 0.85rem;
-              text-align: center;
-              opacity: 0.75;
-              padding-bottom: 25px;
-              border-bottom: 2px solid var(--border);
-              margin-bottom: 35px;
-            }
-            .synopsis {
-              background: rgba(0,0,0,0.1);
-              padding: 20px;
-              border-radius: 12px;
-              border-left: 4px solid var(--accent);
-              font-style: italic;
-              margin-bottom: 40px;
-              font-size: 0.95rem;
-            }
-            .toc {
-              background: rgba(0,0,0,0.15);
-              padding: 25px 35px;
-              border-radius: 12px;
-              font-family: system-ui, sans-serif;
-              margin-bottom: 50px;
-            }
-            .modal-overlay {
-              display: none;
-              position: fixed;
-              inset: 0;
-              background: rgba(0,0,0,0.75);
-              backdrop-filter: blur(4px);
-              z-index: 200;
-              align-items: center;
-              justify-content: center;
-              padding: 20px;
-            }
-            .modal-box {
-              background: var(--paper);
-              border: 2px solid var(--accent);
-              border-radius: 16px;
-              max-width: 480px;
-              width: 100%;
-              padding: 24px;
-              box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-              font-family: system-ui, sans-serif;
-            }
-            @media print {
-              .header-bar { display: none; }
-              .container { border: none; box-shadow: none; background: white; color: black; max-width: 100%; }
-            }
-          </style>
-        </head>
-        <body class="dark">
-          <div class="header-bar">
-            <div>
-              <strong>📚 Studio Buku Complete Reader</strong> — ${project.title}
-            </div>
-            <div class="controls">
-              <button onclick="openFullGlossaryDrawer()">📖 Glosarium (${projGlossary.length})</button>
-              <button onclick="document.body.className='light'">☀️ Terang</button>
-              <button onclick="document.body.className='sepia'">📜 Sepia</button>
-              <button onclick="document.body.className='dark'">🌙 Gelap</button>
-              <button onclick="window.print()">🖨️ Cetak</button>
-            </div>
-          </div>
-
-          <div class="container">
-            <div class="book-title">${project.title}</div>
-            ${project.subtitle ? `<div class="book-subtitle">${project.subtitle}</div>` : ""}
-            <div class="book-meta">
-              Genre: <strong>${project.genre}</strong> • Total <strong>${totalWords.toLocaleString("id-ID")} Kata</strong> • Est. <strong>~${totalReadMins} min baca</strong>
-            </div>
-
-            ${project.synopsis ? `
-              <div class="synopsis">
-                <strong>Sinopsis Naskah:</strong><br/>
-                ${project.synopsis}
-              </div>
-            ` : ""}
-
-            <div style="background: rgba(245,158,11,0.1); border-left: 3px solid var(--accent); padding: 10px 15px; font-family: system-ui; font-size: 0.8rem; margin-bottom: 25px; border-radius: 6px;">
-              💡 <strong>Petunjuk Pembaca / Reviewer:</strong> Kata/istilah yang digarisbawahi kuning (<span class="glossary-link">seperti ini</span>) dapat diklik untuk melihat penjelasan Glosarium Naskah dari penulis.
-            </div>
-
-            <div class="toc">
-              <h3 style="margin-top:0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                📑 Daftar Isi Naskah (${projChapters.length} Bab)
-              </h3>
-              <ol style="padding-left: 20px; margin-bottom: 0;">
-                ${tocHtml}
-              </ol>
-            </div>
-
-            ${chaptersBodyHtml}
-
-            <div style="margin-top: 60px; text-align: center; font-family: system-ui; font-size: 0.85rem; opacity: 0.7; border-top: 1px solid var(--border); padding-top: 25px;">
-              Dipublikasikan melalui Studio Buku (Nulis Bareng Studio)
-            </div>
-          </div>
-
-          <!-- GLOSSARY CARD POPUP MODAL -->
-          <div id="glossary-modal" class="modal-overlay" onclick="closeGlossaryModal()">
-            <div class="modal-box" onclick="event.stopPropagation()">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                <div>
-                  <span id="modal-category" style="background: rgba(245,158,11,0.2); color: var(--accent); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">Kategori</span>
-                  <h3 id="modal-term" style="font-size: 1.4rem; margin: 8px 0 0 0; color: var(--accent);">Nama Istilah</h3>
-                </div>
-                <button onclick="closeGlossaryModal()" style="background:none; border:none; color:var(--text); font-size: 1.2rem; cursor:pointer; font-weight:bold;">✕</button>
-              </div>
-
-              <div id="modal-definition" style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px; opacity: 0.95;">
-                Definisi istilah...
-              </div>
-
-              <div id="modal-aliases" style="font-size: 0.8rem; opacity: 0.7; font-style: italic; border-top: 1px solid var(--border); padding-top: 10px;">
-              </div>
-            </div>
-          </div>
-
-          <!-- FULL GLOSSARY DRAWER MODAL -->
-          <div id="full-glossary-modal" class="modal-overlay" onclick="closeFullGlossaryDrawer()">
-            <div class="modal-box" style="max-width: 600px; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
-                <h3 style="margin:0; font-size: 1.2rem; color: var(--accent);">📖 Glosarium Naskah (${projGlossary.length} Istilah)</h3>
-                <button onclick="closeFullGlossaryDrawer()" style="background:none; border:none; color:var(--text); font-size: 1.2rem; cursor:pointer; font-weight:bold;">✕</button>
-              </div>
-
-              <div style="margin-bottom: 15px;">
-                ${glossaryCardsHtml.length > 0 ? glossaryCardsHtml : '<div style="opacity:0.7; font-size:0.85rem;">Belum ada istilah glosarium yang ditambahkan untuk proyek ini.</div>'}
-              </div>
-            </div>
-          </div>
-
-          <script>
-            const GLOSSARY_DATA = ${JSON.stringify(projGlossary)};
-
-            function openGlossaryPopup(id) {
-              const item = GLOSSARY_DATA.find(g => g.id === id);
-              if (!item) return;
-              document.getElementById('modal-term').innerText = item.term;
-              document.getElementById('modal-category').innerText = item.category || 'Glosarium';
-              document.getElementById('modal-definition').innerText = item.definition || 'Tidak ada deskripsi.';
-              document.getElementById('modal-aliases').innerText = item.aliases ? ('Sebutan/alias lain: ' + item.aliases) : '';
-              document.getElementById('glossary-modal').style.display = 'flex';
-            }
-
-            function closeGlossaryModal() {
-              document.getElementById('glossary-modal').style.display = 'none';
-            }
-
-            function openFullGlossaryDrawer() {
-              document.getElementById('full-glossary-modal').style.display = 'flex';
-            }
-
-            function closeFullGlossaryDrawer() {
-              document.getElementById('full-glossary-modal').style.display = 'none';
-            }
-          </script>
-        </body>
-      </html>
-    `;
+    const html = renderPublicPreviewHtml(db, projSlug);
     res.send(html);
   });
 
