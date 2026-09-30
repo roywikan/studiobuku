@@ -1251,6 +1251,85 @@ async function startServer() {
       res.status(500).json({ error: msg || "Gagal memproses permintaan AI." });
     }
   });
+  app.get("/privacy", (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="id">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Kebijakan Privasi - Studio Buku</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; line-height: 1.6; }
+            .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 40px; border-radius: 20px; border: 1px solid #334155; }
+            h1 { color: #fbbf24; margin-bottom: 8px; }
+            h2 { color: #f59e0b; margin-top: 24px; font-size: 1.2rem; }
+            p { color: #cbd5e1; font-size: 0.95rem; }
+            a { color: #fbbf24; text-decoration: none; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Kebijakan Privasi Studio Buku</h1>
+            <p><strong>Terakhir diperbarui: 30 September 2026</strong></p>
+            <p>Studio Buku (studio.buku.biz.id) berkomitmen untuk melindungi privasi dan keamanan data pengguna dan penulis kami.</p>
+
+            <h2>1. Pengumpulan Informasi</h2>
+            <p>Kami mengumpulkan informasi akun dasar saat Anda masuk menggunakan Google Authentication (seperti nama, alamat email, dan foto profil) untuk memverifikasi hak akses naskah dan profil penulis Anda.</p>
+
+            <h2>2. Penggunaan Data</h2>
+            <p>Data Anda hanya digunakan untuk menyediakan ruang kerja penulisan naskah, sinkronisasi draf, dan fitur analisis Asisten AI dalam Studio Buku.</p>
+
+            <h2>3. Keamanan Data</h2>
+            <p>Kerahasiaan naskah buku Anda dilindungi dengan enkripsi standar dan kontrol akses otentikasi Firebase Auth.</p>
+
+            <h2>4. Kontak</h2>
+            <p>Untuk pertanyaan mengenai kebijakan privasi ini, Anda dapat menghubungi kami melalui <a href="mailto:Roy.Wikan@gmail.com">Roy.Wikan@gmail.com</a>.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+
+  // Terms of Service Route
+  app.get("/terms", (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="id">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Syarat & Ketentuan Layanan - Studio Buku</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; line-height: 1.6; }
+            .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 40px; border-radius: 20px; border: 1px solid #334155; }
+            h1 { color: #fbbf24; margin-bottom: 8px; }
+            h2 { color: #f59e0b; margin-top: 24px; font-size: 1.2rem; }
+            p { color: #cbd5e1; font-size: 0.95rem; }
+            a { color: #fbbf24; text-decoration: none; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Syarat & Ketentuan Layanan Studio Buku</h1>
+            <p><strong>Terakhir diperbarui: 30 September 2026</strong></p>
+
+            <h2>1. Ketentuan Umum</h2>
+            <p>Dengan mengakses dan menggunakan Studio Buku (studio.buku.biz.id), Anda menyetujui untuk mematuhi syarat dan ketentuan layanan ini.</p>
+
+            <h2>2. Hak Cipta & Kepemilikan Naskah</h2>
+            <p>Seluruh hak cipta, ide cerita, dan isi naskah yang ditulis di Studio Buku sepenuhnya merupakan milik sah penulis / pengguna.</p>
+
+            <h2>3. Penggunaan Layanan</h2>
+            <p>Pengguna dilarang menyalahgunakan layanan untuk mempublikasikan materi yang melanggar hukum atau hak cipta pihak lain.</p>
+
+            <h2>4. Kontak Layanan</h2>
+            <p>Pertanyaan mengenai syarat dan ketentuan dapat dikirimkan ke <a href="mailto:Roy.Wikan@gmail.com">Roy.Wikan@gmail.com</a>.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  });
 
   const vite = await createViteServer({
     server: { middlewareMode: true },
