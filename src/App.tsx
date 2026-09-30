@@ -10,6 +10,91 @@ import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
 
+const initialDefaultDb: DB = {
+  authors: [
+    { id: "auth_1", name: "Rian Hidayat", role: "Penulis Utama", avatar: "👨‍💻", color: "bg-emerald-500" },
+    { id: "auth_2", name: "Kirana Maharani", role: "Penulis Studio", avatar: "👩‍🎨", color: "bg-indigo-500" }
+  ],
+  projects: [
+    {
+      id: "proj_1",
+      title: "Gema Di Ujung Senja",
+      subtitle: "Novel Fiksi Psikologis & Perjalanan Dua Jiwa",
+      genre: "Fiksi / Drama",
+      synopsis: "Kisah tentang dua sahabat masa kecil yang terpisah selama satu dekade dan dipertemukan kembali dalam proyek restorasi arsip tua di Yogyakarta.",
+      createdAt: new Date().toISOString()
+    }
+  ],
+  chapters: [
+    {
+      id: "chap_1",
+      projectId: "proj_1",
+      title: "Bab 1: Stasiun Tugu Pukul Empat Sore",
+      subtitle: "Pertemuan setelah sepuluh tahun berlalu",
+      content: "Kereta rel listrik berdecit pelan saat memasuki peron jalur tiga Stasiun Tugu. Aroma uap panas bercampur bau khas stasiun tua menyambut kedatangan sore itu. Langit Yogyakarta tampak jingga kemerahan, menepis mendung yang menggantung sejak siang.\n\nArya berdiri di dekat pilar besi bercat hijau pudar. Tangannya menggenggam tiket kertas yang sudah agak kusut. Di seberangnya, seorang perempuan berjas hujan abu-abu melangkah turun dari gerbong ekonomi, membawa ransel kanvas lusuh yang sama persis seperti sepuluh tahun lalu.\n\n'Kamu terlambat lima menit, Kiran,' sapa Arya dengan senyum tipis.\n\nKirana mendengus pelan, lalu tertawa kecil. 'Kemacetan Ring Road tidak bisa diajak kompromi, Ary. Tapi setidaknya kita tepat waktu untuk memulai semua ini.'",
+      order: 1,
+      status: "final",
+      lastEditedBy: "Rian Hidayat",
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: "chap_2",
+      projectId: "proj_1",
+      title: "Bab 2: Arsip yang Terlupakan",
+      subtitle: "Menemukan kotak kayu berdebu di loteng",
+      content: "Rumah kakek di kawasan Kotabaru menyimpan lorong waktu tersendiri. Debu lembut menari di bawah sorotan cahaya matahari yang menembus genting kaca.\n\n'Di sinilah kakek menyimpan catatan harian tahun 1965,' ujar Kirana sambil menyeka permukaan kotak kayu jati berukir melati.\n\nArya mendekat, membawa lampu senter kecil. Bau kertas tua semacam vanili kering dan tinta cina langsung menusuk indra penciuman mereka. Lembar demi lembar catatan itu menyimpan teka-teki keluarga yang selama ini terkubur rapat.",
+      order: 2,
+      status: "review",
+      lastEditedBy: "Kirana Maharani",
+      updatedAt: new Date().toISOString()
+    }
+  ],
+  ideas: [
+    {
+      id: "idea_1",
+      projectId: "proj_1",
+      title: "Simbol Kunci Inggris Tua",
+      content: "Kunci inggris peninggalan ayah Arya jadi metafora rekonsiliasi. Setiap bab bisa disisipkan kutipan tentang memperbaiki mesin yang macet.",
+      category: "Plot",
+      authorId: "auth_1",
+      pinned: true,
+      createdAt: new Date().toISOString()
+    }
+  ],
+  logs: [
+    {
+      id: "log_1",
+      projectId: "proj_1",
+      chapterId: "chap_1",
+      chapterTitle: "Bab 1: Stasiun Tugu Pukul Empat Sore",
+      authorName: "Rian Hidayat",
+      action: "Membuat bab baru dan menulis draf awal",
+      timestamp: new Date().toISOString()
+    }
+  ],
+  annotations: [],
+  glossary: [
+    {
+      id: "glos_1",
+      projectId: "proj_1",
+      term: "Arya Perkasa",
+      category: "Karakter",
+      definition: "Tokoh utama pria, 28 tahun, konservator arsip sejarah lulusan UGM.",
+      aliases: "Ary, Arya",
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: "glos_2",
+      projectId: "proj_1",
+      term: "Kirana Maharani",
+      category: "Karakter",
+      definition: "Tokoh utama wanita, jurnalis lepas berjiwa petualang.",
+      aliases: "Kiran, Kirana",
+      updatedAt: new Date().toISOString()
+    }
+  ]
+};
+
 export default function App() {
   const [db, setDb] = useState<DB | null>(null);
   const [activeTab, setActiveTab] = useState<"editor" | "ideas" | "logs" | "preview" | "ai">("editor");
@@ -37,18 +122,26 @@ export default function App() {
   const loadData = async (targetProjectId?: string) => {
     try {
       const res = await fetch("/api/data");
-      const data: DB = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+
+      let data: DB;
+      if (res.ok && contentType.includes("application/json")) {
+        data = await res.json();
+        localStorage.setItem("studio_buku_db_cache", JSON.stringify(data));
+      } else {
+        const cached = localStorage.getItem("studio_buku_db_cache");
+        data = cached ? JSON.parse(cached) : initialDefaultDb;
+      }
+
       setDb(data);
 
       if (data.authors && data.authors.length > 0 && !currentAuthor) {
         setCurrentAuthor(data.authors[0]);
       }
 
-      // Determine active project
       const projId = targetProjectId || selectedProjectId || (data.projects[0] ? data.projects[0].id : "proj_1");
       setSelectedProjectId(projId);
 
-      // Determine active chapter for active project
       const projChapters = data.chapters.filter(c => c.projectId === projId);
       if (projChapters.length > 0) {
         setSelectedChapterId(projChapters[0].id);
@@ -56,7 +149,15 @@ export default function App() {
         setSelectedChapterId(data.chapters[0].id);
       }
     } catch (e) {
-      console.error("Failed to load db data:", e);
+      console.warn("API Data non-JSON fallback triggered:", e);
+      const cached = localStorage.getItem("studio_buku_db_cache");
+      const data: DB = cached ? JSON.parse(cached) : initialDefaultDb;
+      setDb(data);
+      if (data.authors && data.authors.length > 0 && !currentAuthor) {
+        setCurrentAuthor(data.authors[0]);
+      }
+      setSelectedProjectId(data.projects[0]?.id || "proj_1");
+      setSelectedChapterId(data.chapters[0]?.id || "chap_1");
     } finally {
       setLoading(false);
     }
@@ -77,14 +178,7 @@ export default function App() {
     );
   }
 
-  const project = db.projects.find(p => p.id === selectedProjectId) || db.projects[0] || {
-    id: "proj_1",
-    title: "Gema Di Ujung Senja",
-    subtitle: "Novel Studio",
-    genre: "Fiksi",
-    synopsis: "Sinopsis proyek naskah...",
-    createdAt: new Date().toISOString()
-  };
+  const project = db.projects.find(p => p.id === selectedProjectId) || db.projects[0] || initialDefaultDb.projects[0];
 
   const currentProjectChapters = db.chapters.filter(c => c.projectId === project.id);
   const currentProjectIdeas = db.ideas.filter(i => i.projectId === project.id);
@@ -101,8 +195,23 @@ export default function App() {
           authorName: currentAuthor.name
         })
       });
-      const createdProj: Project = await res.json();
-      await loadData(createdProj.id);
+      if (res.ok && res.headers.get("content-type")?.includes("application/json")) {
+        const createdProj: Project = await res.json();
+        await loadData(createdProj.id);
+      } else {
+        const newProj: Project = {
+          id: "proj_" + Date.now(),
+          title: newProjData.title,
+          subtitle: newProjData.subtitle,
+          genre: newProjData.genre,
+          synopsis: newProjData.synopsis,
+          createdAt: new Date().toISOString()
+        };
+        const updatedDb = { ...db, projects: [...db.projects, newProj] };
+        setDb(updatedDb);
+        localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+        setSelectedProjectId(newProj.id);
+      }
     } catch (e) {
       console.error("Error creating new project:", e);
     }
@@ -119,6 +228,11 @@ export default function App() {
   // Handlers for Chapters
   const handleUpdateChapter = async (chapter: Chapter, actionDescription: string) => {
     try {
+      const updatedChapters = db.chapters.map(c => c.id === chapter.id ? { ...chapter, updatedAt: new Date().toISOString() } : c);
+      const updatedDb = { ...db, chapters: updatedChapters };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch(`/api/chapters/${chapter.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -128,125 +242,169 @@ export default function App() {
           actionDescription
         })
       });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error updating chapter:", e);
-      throw e;
+      console.warn("API Chapter update saved locally:", e);
     }
   };
 
   const handleCreateChapter = async () => {
     try {
-      const res = await fetch("/api/chapters", {
+      const newChap: Chapter = {
+        id: "chap_" + Date.now(),
+        projectId: project.id,
+        title: `Bab ${currentProjectChapters.length + 1}: Bagian Baru`,
+        subtitle: "Sub-judul bab...",
+        content: "Tulis isi bab di sini...",
+        order: currentProjectChapters.length + 1,
+        status: "draft",
+        lastEditedBy: currentAuthor.name,
+        updatedAt: new Date().toISOString()
+      };
+      const updatedDb = { ...db, chapters: [...db.chapters, newChap] };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+      setSelectedChapterId(newChap.id);
+
+      await fetch("/api/chapters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          projectId: project.id,
-          title: `Bab ${currentProjectChapters.length + 1}: Bagian Baru`,
-          subtitle: "Sub-judul bab...",
-          content: "Tulis isi bab di sini...",
-          order: currentProjectChapters.length + 1,
-          status: "draft",
+          ...newChap,
           authorName: currentAuthor.name
         })
       });
-      const newChap = await res.json();
-      await loadData(project.id);
-      setSelectedChapterId(newChap.id);
     } catch (e) {
-      console.error("Error creating chapter:", e);
+      console.warn("Chapter created locally:", e);
     }
   };
 
   const handleDeleteChapter = async (id: string) => {
     try {
-      await fetch(`/api/chapters/${id}`, { method: "DELETE" });
-      await loadData(project.id);
+      const remaining = db.chapters.filter(c => c.id !== id);
+      const updatedDb = { ...db, chapters: remaining };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
       if (currentProjectChapters.length > 1) {
-        const remaining = currentProjectChapters.filter(c => c.id !== id);
-        if (remaining.length > 0) setSelectedChapterId(remaining[0].id);
+        const remProj = currentProjectChapters.filter(c => c.id !== id);
+        if (remProj.length > 0) setSelectedChapterId(remProj[0].id);
       }
+
+      await fetch(`/api/chapters/${id}`, { method: "DELETE" });
     } catch (e) {
-      console.error("Error deleting chapter:", e);
+      console.warn("Chapter deleted locally:", e);
     }
   };
 
   // Handlers for Ideas
   const handleAddIdea = async (idea: Partial<Idea>) => {
     try {
+      const newIdea: Idea = {
+        id: "idea_" + Date.now(),
+        projectId: project.id,
+        title: idea.title || "Ide Baru",
+        content: idea.content || "",
+        category: idea.category || "Plot",
+        authorId: currentAuthor.id,
+        pinned: !!idea.pinned,
+        createdAt: new Date().toISOString()
+      };
+      const updatedDb = { ...db, ideas: [...db.ideas, newIdea] };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch("/api/ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...idea,
-          projectId: project.id,
-          authorId: currentAuthor.id
-        })
+        body: JSON.stringify(newIdea)
       });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error adding idea:", e);
+      console.warn("Idea added locally:", e);
     }
   };
 
   const handleUpdateIdea = async (id: string, updates: Partial<Idea>) => {
     try {
+      const updatedIdeas = db.ideas.map(i => i.id === id ? { ...i, ...updates } : i);
+      const updatedDb = { ...db, ideas: updatedIdeas };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch(`/api/ideas/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates)
       });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error updating idea:", e);
+      console.warn("Idea updated locally:", e);
     }
   };
 
   const handleDeleteIdea = async (id: string) => {
     try {
+      const remaining = db.ideas.filter(i => i.id !== id);
+      const updatedDb = { ...db, ideas: remaining };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch(`/api/ideas/${id}`, { method: "DELETE" });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error deleting idea:", e);
+      console.warn("Idea deleted locally:", e);
     }
   };
 
   const handleCreateAnnotation = async (ann: Partial<Annotation>) => {
     try {
+      const newAnn: Annotation = {
+        id: "ann_" + Date.now(),
+        projectId: project.id,
+        chapterId: ann.chapterId || "",
+        chapterTitle: ann.chapterTitle || "",
+        text: ann.text || "",
+        authorName: currentAuthor.name,
+        createdAt: new Date().toISOString(),
+        resolved: false
+      };
+      const updatedDb = { ...db, annotations: [...(db.annotations || []), newAnn] };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch("/api/annotations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...ann,
-          projectId: project.id,
-          authorName: currentAuthor.name
-        })
+        body: JSON.stringify(newAnn)
       });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error creating annotation:", e);
+      console.warn("Annotation created locally:", e);
     }
   };
 
   const handleUpdateAnnotation = async (id: string, updates: Partial<Annotation>) => {
     try {
+      const updatedAnns = (db.annotations || []).map(a => a.id === id ? { ...a, ...updates } : a);
+      const updatedDb = { ...db, annotations: updatedAnns };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch(`/api/annotations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates)
       });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error updating annotation:", e);
+      console.warn("Annotation updated locally:", e);
     }
   };
 
   const handleDeleteAnnotation = async (id: string) => {
     try {
+      const remaining = (db.annotations || []).filter(a => a.id !== id);
+      const updatedDb = { ...db, annotations: remaining };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
       await fetch(`/api/annotations/${id}`, { method: "DELETE" });
-      loadData(project.id);
     } catch (e) {
-      console.error("Error deleting annotation:", e);
+      console.warn("Annotation deleted locally:", e);
     }
   };
 

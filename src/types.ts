@@ -56,7 +56,8 @@ export interface GlossaryItem {
   term: string;
   category: "Karakter" | "Lokasi" | "Istilah Dunia" | "Aturan Magic/Sains" | "Lainnya";
   definition: string;
-  authorName: string;
+  authorName?: string;
+  aliases?: string;
   updatedAt: string;
 }
 
