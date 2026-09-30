@@ -69,9 +69,16 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
+      const rawEmail = user.email || "";
+      const emailPrefix = rawEmail ? rawEmail.split("@")[0] : "";
+      const displayName = user.displayName?.trim();
+      const cleanName = displayName && displayName.length > 0
+        ? displayName
+        : emailPrefix ? emailPrefix.replace(/[._]/g, " ") : "Penulis Google";
+
       const session: UserSession = {
-        email: user.email || "penulis@gmail.com",
-        name: user.displayName || user.email?.split("@")[0] || "Penulis Google",
+        email: rawEmail || "penulis@gmail.com",
+        name: cleanName,
         avatar: user.photoURL || "👨‍💻",
         authMethod: "google",
         loginTime: new Date().toLocaleTimeString("id-ID")

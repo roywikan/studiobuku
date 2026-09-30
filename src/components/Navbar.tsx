@@ -324,7 +324,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Profile Switcher & Logout Menu */}
             <div className="relative group">
               <button className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 border-2 border-amber-500/60 rounded-full py-1.5 px-3.5 text-xs text-white transition shadow-lg">
-                <span className="text-sm">{currentAuthor.avatar}</span>
+                {currentAuthor.avatar && (currentAuthor.avatar.startsWith("http://") || currentAuthor.avatar.startsWith("https://")) ? (
+                  <img src={currentAuthor.avatar} alt={currentAuthor.name} className="w-5 h-5 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
+                ) : (
+                  <span className="text-sm">{currentAuthor.avatar || "✍️"}</span>
+                )}
                 <span className="font-extrabold hidden sm:inline">{currentAuthor.name}</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               </button>
@@ -341,7 +345,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       currentAuthor.id === auth.id ? "bg-amber-400 text-slate-950 font-black" : "text-slate-100 font-bold"
                     }`}
                   >
-                    <span className="text-base">{auth.avatar}</span>
+                    {auth.avatar && (auth.avatar.startsWith("http://") || auth.avatar.startsWith("https://")) ? (
+                      <img src={auth.avatar} alt={auth.name} className="w-6 h-6 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
+                    ) : (
+                      <span className="text-base">{auth.avatar || "✍️"}</span>
+                    )}
                     <div>
                       <div className="font-extrabold">{auth.name}</div>
                       <div className={`text-[10px] ${currentAuthor.id === auth.id ? "text-slate-900 font-semibold" : "text-slate-400"}`}>{auth.role}</div>
