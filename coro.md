@@ -170,7 +170,29 @@ NODE_VERSION = "18"
 
 ---
 
-## ✅ Langkah 7: Verifikasi & Uji Coba Aplikasi
+## 🔐 Langkah 7: Pengaturan Authorized Domains Firebase Auth (Google Sign-In)
+
+Untuk mengaktifkan otentikasi Google Sign-In pada domain custom (`studio.buku.biz.id`) dan domain Cloudflare Pages (`studiobuku.pages.dev`), Anda perlu menambahkan domain tersebut ke daftar **Authorized Domains** di Firebase Console:
+
+1. **Buka Firebase Console Settings**:
+   Akses langsung ke menu pengaturan otentikasi proyek Firebase Anda:
+   👉 **[Firebase Auth Authorized Domains Settings](https://console.firebase.google.com/project/gen-lang-client-0987418952/authentication/settings)**
+
+2. **Masuk ke Tab Authorized Domains**:
+   - Scroll ke bagian bawah halaman di bawah opsi **Settings -> Authorized Domains**.
+   - Klik tombol **"Add domain"** (atau **"Tambah Domain"**).
+
+3. **Tambahkan Domain Kustom Anda**:
+   - Masukkan `studio.buku.biz.id` -> Klik **Save**.
+   - Masukkan `studiobuku.pages.dev` -> Klik **Save**.
+
+4. **Verifikasi**:
+   - Buka kembali `https://studio.buku.biz.id/` dan klik **"Masuk Otentik dengan Akun Google"**.
+   - Popup Google Sign-In kini akan langsung terbuka dan memproses login Gmail secara resmi tanpa error `auth/unauthorized-domain`.
+
+---
+
+## ✅ Langkah 8: Verifikasi & Uji Coba Aplikasi
 
 1. Buka browser dan kunjungi:
    ```text
@@ -178,6 +200,7 @@ NODE_VERSION = "18"
    ```
 2. Pastikan:
    - ✅ UI Studio Buku memuat naskah & editor dengan mulus.
+   - ✅ Otentikasi Google Auth & Password / PIN berfungsi lancar.
    - ✅ Fitur Asisten AI Gemini berfungsi tanpa kendala.
    - ✅ Tautan Reader Publik (`https://studio.buku.biz.id/public/project/...`) dan fitur Glosarium Interaktif berjalan dengan baik.
 

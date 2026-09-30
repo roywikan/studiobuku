@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { StudioBukuLogo } from "./StudioBukuLogo";
-import { Lock, LogIn, Key, User, ShieldCheck, Loader2 } from "lucide-react";
+import { Lock, LogIn, Key, User, ShieldCheck, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { auth, googleProvider } from "../firebase";
 import { signInWithPopup } from "firebase/auth";
 
@@ -23,6 +23,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -46,6 +47,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setErrorMsg("");
+    setUnauthorizedDomain(null);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
@@ -65,6 +67,10 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
         setErrorMsg("Jendela masuk Google ditutup sebelum selesai.");
       } else if (err.code === "auth/popup-blocked") {
         setErrorMsg("Popup diblokir browser. Harap izinkan popup untuk studio ini.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        const currentDomain = window.location.hostname;
+        setUnauthorizedDomain(currentDomain);
+        setErrorMsg(`Domain '${currentDomain}' belum didaftarkan di Firebase Authorized Domains.`);
       } else {
         setErrorMsg(err.message || "Gagal masuk dengan Akun Google.");
       }
@@ -118,7 +124,43 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
           </button>
         </div>
 
-        {errorMsg && (
+        {unauthorizedDomain && (
+          <div className="bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 text-xs space-y-2.5 animate-in fade-in duration-200">
+            <div className="flex items-center space-x-2 text-amber-300 font-extrabold text-sm">
+              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <span>Satu Langkah Tambahan untuk Domain Custom</span>
+            </div>
+            <p className="text-slate-200 leading-relaxed text-[11px]">
+              Firebase Auth mewajibkan daftar <strong className="text-amber-300">Authorized Domains</strong> untuk alasan keamanan domain kustom.
+            </p>
+            <div className="bg-slate-950/80 p-2.5 rounded-xl font-mono text-[11px] text-amber-400 border border-slate-800 break-all">
+              Domain Anda: <strong>{unauthorizedDomain}</strong>
+            </div>
+            <p className="text-slate-300 text-[11px]">
+              Silakan tambahkan domain <code className="text-amber-300">studio.buku.biz.id</code> dan <code className="text-amber-300">studiobuku.pages.dev</code> ke daftar Authorized Domains pada:
+            </p>
+            <a
+              href="https://console.firebase.google.com/project/gen-lang-client-0987418952/authentication/settings"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3.5 py-2 rounded-xl text-xs transition shadow-md w-full justify-center"
+            >
+              <span>Buka Firebase Auth Settings</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <div className="pt-1 text-center">
+              <button
+                type="button"
+                onClick={() => setActiveTab("password")}
+                className="text-[11px] text-amber-300 hover:underline font-bold"
+              >
+                👉 Atau gunakan Mode Password / PIN sekarang
+              </button>
+            </div>
+          </div>
+        )}
+
+        {errorMsg && !unauthorizedDomain && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-300 p-3 rounded-xl text-xs font-bold leading-relaxed">
             {errorMsg}
           </div>
