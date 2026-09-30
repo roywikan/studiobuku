@@ -47,7 +47,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
       .replace(/^-+|-+$/g, "") || "naskah";
   };
 
-  const PUBLIC_DOMAIN = "https://studio.buku.biz";
+  const PUBLIC_DOMAIN = "https://studio.buku.biz.id";
   const projSlug = slugify(project.title);
   const chapSlug = currentChapter ? slugify(currentChapter.title) : "bab-1";
 
@@ -833,7 +833,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Tautan HTML Publik domain resmi <strong>studio.buku.biz</strong> dirancang khusus untuk menarik minat <strong>akademisi, investor, donatur hibah penulisan, penerbit, dan editor profesional</strong>. Tautan ini mendukung SEO lengkap & crawling Google Bot.
+              Tautan HTML Publik domain resmi <strong>studio.buku.biz.id</strong> dirancang khusus untuk menarik minat <strong>akademisi, investor, donatur hibah penulisan, penerbit, dan editor profesional</strong>. Tautan ini mendukung SEO lengkap & crawling Google Bot.
             </p>
 
             <div className="space-y-4">

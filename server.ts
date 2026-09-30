@@ -604,7 +604,7 @@ async function startServer() {
     const cleanProjSlug = (projectSlugInput || "").toLowerCase();
     const project = db.projects.find(p => p.id === projectSlugInput || slugify(p.title) === cleanProjSlug) || db.projects[0];
     if (!project) {
-      return `<!DOCTYPE html><html lang="id"><head><title>Proyek Tidak Ditemukan - Studio Buku</title></head><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;text-align:center;padding:50px;"><h1>404 - Proyek Naskah Tidak Ditemukan</h1><p><a href="https://studio.buku.biz" style="color:#fbbf24;">Kembali ke Studio Buku</a></p></body></html>`;
+      return `<!DOCTYPE html><html lang="id"><head><title>Proyek Tidak Ditemukan - Studio Buku</title></head><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;text-align:center;padding:50px;"><h1>404 - Proyek Naskah Tidak Ditemukan</h1><p><a href="https://studio.buku.biz.id" style="color:#fbbf24;">Kembali ke Studio Buku</a></p></body></html>`;
     }
 
     const projChapters = db.chapters.filter(c => c.projectId === project.id).sort((a,b) => a.order - b.order);
@@ -631,7 +631,7 @@ async function startServer() {
     const projSlugClean = slugify(project.title);
     const chapSlugClean = currentChap ? slugify(currentChap.title) : "bab-1";
 
-    const BASE_DOMAIN = "https://studio.buku.biz";
+    const BASE_DOMAIN = "https://studio.buku.biz.id";
     const canonicalUrl = isFullBook
       ? `${BASE_DOMAIN}/p/${projSlugClean}`
       : `${BASE_DOMAIN}/p/${projSlugClean}/${chapSlugClean}`;
@@ -726,10 +726,10 @@ async function startServer() {
       "publisher": {
         "@type": "Organization",
         "name": "Studio Buku",
-        "url": "https://studio.buku.biz",
+        "url": "https://studio.buku.biz.id",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://studio.buku.biz/studio-buku-logo.jpg"
+          "url": "https://studio.buku.biz.id/studio-buku-logo.jpg"
         }
       },
       "author": {
@@ -777,7 +777,7 @@ async function startServer() {
           <meta property="og:description" content="${escapeHtml(pageDesc)}" />
           <meta property="og:url" content="${canonicalUrl}" />
           <meta property="og:site_name" content="Studio Buku" />
-          <meta property="og:image" content="https://studio.buku.biz/studio-buku-logo.jpg" />
+          <meta property="og:image" content="https://studio.buku.biz.id/studio-buku-logo.jpg" />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
           <meta property="og:locale" content="id_ID" />
@@ -786,7 +786,7 @@ async function startServer() {
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="${escapeHtml(pageTitle)}" />
           <meta name="twitter:description" content="${escapeHtml(pageDesc)}" />
-          <meta name="twitter:image" content="https://studio.buku.biz/studio-buku-logo.jpg" />
+          <meta name="twitter:image" content="https://studio.buku.biz.id/studio-buku-logo.jpg" />
 
           <!-- Schema.org JSON-LD Structured Data for Google Bot Crawling -->
           <script type="application/ld+json">
@@ -1034,7 +1034,7 @@ async function startServer() {
 
             <!-- Footer -->
             <div class="footer">
-              Dipublikasikan secara resmi melalui <strong><a href="https://studio.buku.biz" style="color:var(--accent); text-decoration:none;">Studio Buku (studio.buku.biz)</a></strong><br/>
+              Dipublikasikan secara resmi melalui <strong><a href="https://studio.buku.biz.id" style="color:var(--accent); text-decoration:none;">Studio Buku (studio.buku.biz.id)</a></strong><br/>
               Draf Naskah Hak Cipta © 2026 Studio Buku. Seluruh hak cipta dilindungi undang-undang.<br/>
               Untuk keperluan riset akademis, hibah penulisan, atau investasi penerbitan, hubungi: <a href="mailto:Roy.Wikan@gmail.com" style="color:var(--accent);">Roy.Wikan@gmail.com</a>
             </div>
