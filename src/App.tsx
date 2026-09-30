@@ -10,6 +10,7 @@ import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
+import { PublicReaderView } from "./components/PublicReaderView";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
 
@@ -212,6 +213,16 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const pathname = window.location.pathname;
+  const isPublicRoute =
+    pathname.startsWith("/p/") ||
+    pathname.startsWith("/buku/") ||
+    pathname.startsWith("/public/");
+
+  if (isPublicRoute) {
+    return <PublicReaderView initialDb={db || undefined} />;
+  }
 
   if (!userSession) {
     return <LoginGate onLoginSuccess={handleLoginSuccess} />;
