@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StudioBukuLogo } from "./StudioBukuLogo";
-import { Lock, LogIn, Key, User, ShieldCheck, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
+import { LogIn, Key, User, ShieldCheck, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { auth, googleProvider } from "../firebase";
 import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
 
@@ -111,16 +111,12 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="text-center space-y-2 relative z-10">
-          <div className="inline-flex items-center justify-center p-3 bg-amber-400/10 rounded-2xl border border-amber-400/30 mb-2">
-            <StudioBukuLogo tagline="Studio Penulisan Terotentikasi" />
+        <div className="text-center space-y-3 relative z-10">
+          <div className="inline-flex items-center justify-center p-3 bg-amber-400/10 rounded-2xl border border-amber-400/30">
+            <StudioBukuLogo tagline="Nulis Buku Bareng" size="lg" />
           </div>
-          <h2 className="text-xl font-black text-amber-300 flex items-center justify-center space-x-2">
-            <Lock className="w-5 h-5 text-amber-400" />
-            <span>Akses Terproteksi Studio Buku</span>
-          </h2>
           <p className="text-xs text-slate-300 max-w-sm mx-auto font-medium">
-            Masuk dengan Akun Google Firebase Auth atau Sandi Penulis untuk mengakses ruang kerja naskah Anda.
+            Masuk dengan Akun Google atau Sandi Penulis untuk mengakses ruang kerja naskah Anda.
           </p>
         </div>
 
@@ -221,14 +217,14 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
                 </svg>
               )}
               <span className="text-xs">
-                {isLoading ? "Menghubungkan ke Google..." : "Masuk Otentik dengan Akun Google"}
+                {isLoading ? "Menghubungkan ke Google..." : "Masuk dengan Akun Google"}
               </span>
             </button>
 
             <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 text-[11px] text-slate-300 space-y-1.5">
               <div className="font-extrabold text-amber-300 flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Otentikasi Resmi Firebase Auth:</span>
+                <span>Gunakan akun Gmail anda :</span>
               </div>
               <p className="leading-relaxed opacity-90">
                 Setiap kali Anda menekan tombol di atas, popup otentikasi Google akan muncul dan meminta Anda memilih akun Gmail Anda sendiri secara langsung.
@@ -280,8 +276,8 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
           </form>
         )}
 
-        <div className="pt-2 text-center border-t border-slate-800 text-[10px] text-slate-400">
-          Studio Buku (Nulis Bareng Studio) • Tampilan Reader Publik tetap aman & Read-Only.
+        <div className="pt-2 text-center border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed">
+          Studio Buku (Nulis Buku Bareng) • Copyright 2026 Studio Buku.  Whatsapp: +628997886061
         </div>
       </div>
     </div>

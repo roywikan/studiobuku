@@ -81,11 +81,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className={`${currentTheme.bgHeader} text-slate-100 border-b border-white/15 sticky top-0 z-30 shadow-2xl transition-colors duration-300`}>
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-10 xl:px-12 2xl:px-16">
         <div className="flex items-center justify-between h-20">
           
           {/* Studio Buku Clean Brand Header & Interactive Project Switcher */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 lg:space-x-5">
             <StudioBukuLogo tagline="Nulis Bareng" />
 
             <div className="hidden xl:block h-7 w-px bg-white/20 mx-1" />
@@ -94,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative hidden xl:block">
               <button
                 onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                className="flex items-center space-x-2 text-left bg-slate-900/80 hover:bg-slate-900 px-3 py-1.5 rounded-xl border border-white/20 transition shadow-inner max-w-xs group"
+                className="flex items-center space-x-2 text-left bg-slate-900/80 hover:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-white/20 transition shadow-inner max-w-xs group"
                 title="Klik untuk memilih proyek lain atau membuat proyek buku baru"
               >
                 <div className="truncate">
@@ -200,14 +200,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* High-Contrast Island Navigation Container */}
           <nav className="hidden lg:flex items-center">
-            <div className={`${currentTheme.bgIslandContainer} p-1.5 rounded-full border-2 border-white/20 shadow-2xl backdrop-blur-md flex items-center space-x-1.5 transition-colors duration-300`}>
+            <div className={`${currentTheme.bgIslandContainer} p-1.5 rounded-full border-2 border-white/20 shadow-2xl backdrop-blur-md flex items-center space-x-1.5 xl:space-x-2 transition-colors duration-300`}>
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-4 py-2 rounded-full text-xs font-black tracking-wide transition-all duration-200 transform active:scale-95 ${
+                    className={`relative px-4 xl:px-5 py-2 rounded-full text-xs font-black tracking-wide transition-all duration-200 transform active:scale-95 ${
                       isActive
                         ? "bg-amber-400 text-slate-950 shadow-xl shadow-amber-950/50 ring-2 ring-white scale-105"
                         : "text-white hover:bg-white/15 hover:text-white"
@@ -221,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* High-Contrast Action Buttons & Profile Switcher */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
             
             {/* Theme Selector Dropdown Button */}
             <div className="relative">
@@ -323,7 +323,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Profile Switcher & Logout Menu */}
             <div className="relative group">
-              <button className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 border-2 border-amber-500/60 rounded-full py-1.5 px-3.5 text-xs text-white transition shadow-lg">
+              <button className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 border-2 border-amber-500/60 rounded-full py-1.5 px-3.5 text-xs text-white transition shadow-lg cursor-pointer">
                 {currentAuthor.avatar && (currentAuthor.avatar.startsWith("http://") || currentAuthor.avatar.startsWith("https://")) ? (
                   <img src={currentAuthor.avatar} alt={currentAuthor.name} className="w-5 h-5 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
                 ) : (
@@ -333,41 +333,44 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               </button>
 
-              <div className="absolute right-0 mt-2 w-64 bg-slate-950 border-2 border-slate-800 rounded-2xl shadow-2xl py-2 hidden group-hover:block z-50 backdrop-blur-2xl">
-                <div className="px-3.5 py-1.5 text-[11px] font-black text-amber-300 border-b border-slate-800">
-                  Profil Penulis Studio:
-                </div>
-                {authors.map((auth) => (
-                  <button
-                    key={auth.id}
-                    onClick={() => setCurrentAuthor(auth)}
-                    className={`w-full text-left px-3.5 py-2 text-xs flex items-center space-x-2.5 hover:bg-slate-800 transition ${
-                      currentAuthor.id === auth.id ? "bg-amber-400 text-slate-950 font-black" : "text-slate-100 font-bold"
-                    }`}
-                  >
-                    {auth.avatar && (auth.avatar.startsWith("http://") || auth.avatar.startsWith("https://")) ? (
-                      <img src={auth.avatar} alt={auth.name} className="w-6 h-6 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
-                    ) : (
-                      <span className="text-base">{auth.avatar || "✍️"}</span>
-                    )}
-                    <div>
-                      <div className="font-extrabold">{auth.name}</div>
-                      <div className={`text-[10px] ${currentAuthor.id === auth.id ? "text-slate-900 font-semibold" : "text-slate-400"}`}>{auth.role}</div>
-                    </div>
-                  </button>
-                ))}
-
-                {onLogout && (
-                  <div className="pt-1 mt-1 border-t border-slate-800 px-2">
-                    <button
-                      onClick={onLogout}
-                      className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/20 transition"
-                    >
-                      <Lock className="w-3.5 h-3.5 text-red-400" />
-                      <span>Kunci & Keluar Studio</span>
-                    </button>
+              {/* Smooth Hover Bridge & Dropdown Box */}
+              <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50">
+                <div className="w-64 bg-slate-950 border-2 border-slate-800 rounded-2xl shadow-2xl py-2 backdrop-blur-2xl">
+                  <div className="px-3.5 py-1.5 text-[11px] font-black text-amber-300 border-b border-slate-800">
+                    Profil Penulis Studio:
                   </div>
-                )}
+                  {authors.map((auth) => (
+                    <button
+                      key={auth.id}
+                      onClick={() => setCurrentAuthor(auth)}
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center space-x-2.5 hover:bg-slate-800 transition ${
+                        currentAuthor.id === auth.id ? "bg-amber-400 text-slate-950 font-black" : "text-slate-100 font-bold"
+                      }`}
+                    >
+                      {auth.avatar && (auth.avatar.startsWith("http://") || auth.avatar.startsWith("https://")) ? (
+                        <img src={auth.avatar} alt={auth.name} className="w-6 h-6 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
+                      ) : (
+                        <span className="text-base">{auth.avatar || "✍️"}</span>
+                      )}
+                      <div>
+                        <div className="font-extrabold">{auth.name}</div>
+                        <div className={`text-[10px] ${currentAuthor.id === auth.id ? "text-slate-900 font-semibold" : "text-slate-400"}`}>{auth.role}</div>
+                      </div>
+                    </button>
+                  ))}
+
+                  {onLogout && (
+                    <div className="pt-1 mt-1 border-t border-slate-800 px-2">
+                      <button
+                        onClick={onLogout}
+                        className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/20 transition cursor-pointer"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-red-400" />
+                        <span>Kunci & Keluar Studio</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

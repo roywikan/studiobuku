@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Chapter, Author, GlossaryItem } from "../types";
 import { WriterTheme } from "../theme";
-import { Plus, Trash2, Sparkles, Clock, BookOpen, Save, Wand2, BarChart3, ChevronDown, ChevronUp, Timer, Flame, CheckCircle2, AlertCircle, Target, Award, BookMarked, Search, Edit3, Copy, User, MapPin, Globe, Zap, Tag } from "lucide-react";
+import { Plus, Trash2, Sparkles, Clock, BookOpen, Save, Wand2, BarChart3, ChevronDown, ChevronUp, Timer, Flame, CheckCircle2, AlertCircle, Target, Award, BookMarked, Search, Edit3, Copy, User, MapPin, Globe, Zap, Tag, PanelLeftClose, PanelLeftOpen, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ChapterEditorProps {
   chapters: Chapter[];
@@ -62,6 +62,14 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModalMode, setAiModalMode] = useState<"continue" | "proofread" | null>(null);
   const [aiResult, setAiResult] = useState("");
+
+  // Sidebar Collapsible State: default expanded on desktop (>=768px), default collapsed on tablet/mobile (<768px)
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 768;
+    }
+    return true;
+  });
 
   // Statistics Panel State & Session Timer
   const [showStatsPanel, setShowStatsPanel] = useState(true);
@@ -359,223 +367,312 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
   return (
     <div className={`flex-1 flex flex-col md:flex-row h-[calc(100vh-5rem)] ${currentTheme.bgMain} ${currentTheme.textMain} overflow-hidden transition-colors duration-300`}>
       {/* Sidebar Chapters & Glossary List */}
-      <aside className={`w-full md:w-80 ${currentTheme.bgSidebar} border-r-2 ${currentTheme.border} flex flex-col h-1/3 md:h-full transition-colors duration-300`}>
-        
-        {/* Sidebar Header Mode Switcher (Bab vs Glosarium) */}
-        <div className={`p-3 border-b-2 ${currentTheme.border} flex items-center justify-between`}>
-          <div className="flex items-center space-x-1 bg-slate-900 border-2 border-slate-700 p-1 rounded-full text-xs font-black">
+      {!isSidebarExpanded ? (
+        /* COLLAPSED SIDEBAR STRIP / TOP BAR */
+        <aside className={`${currentTheme.bgSidebar} border-r-2 ${currentTheme.border} transition-all duration-300 flex flex-col shrink-0`}>
+          {/* Desktop Collapsed Vertical Strip */}
+          <div className="hidden md:flex flex-col items-center py-3 px-2 space-y-4 w-14 h-full border-r-2 border-amber-500/20">
             <button
-              onClick={() => setSidebarTab("chapters")}
-              className={`px-3 py-1 rounded-full transition flex items-center space-x-1 ${
-                sidebarTab === "chapters" ? "bg-amber-400 text-slate-950 shadow-md" : "text-slate-300 hover:text-white"
-              }`}
+              onClick={() => setIsSidebarExpanded(true)}
+              className="p-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl transition shadow-lg flex items-center justify-center transform active:scale-95"
+              title="Buka Bilah Menu (Expand Sidebar)"
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Bab ({chapters.length})</span>
+              <PanelLeftOpen className="w-5 h-5" />
+            </button>
+
+            <div className="w-8 h-0.5 bg-slate-700 rounded-full my-1" />
+
+            <button
+              onClick={() => {
+                setSidebarTab("chapters");
+                setIsSidebarExpanded(true);
+              }}
+              className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 hover:border-amber-400 transition relative"
+              title={`Menu Bab (${chapters.length})`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                {chapters.length}
+              </span>
             </button>
 
             <button
-              onClick={() => setSidebarTab("glossary")}
-              className={`px-3 py-1 rounded-full transition flex items-center space-x-1 ${
-                sidebarTab === "glossary" ? "bg-amber-400 text-slate-950 shadow-md" : "text-slate-300 hover:text-white"
-              }`}
+              onClick={() => {
+                setSidebarTab("glossary");
+                setIsSidebarExpanded(true);
+              }}
+              className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 hover:border-amber-400 transition relative"
+              title={`Glosarium (${glossary.length})`}
             >
-              <BookMarked className="w-3.5 h-3.5" />
-              <span>Glosarium ({glossary.length})</span>
+              <BookMarked className="w-4 h-4" />
+              <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                {glossary.length}
+              </span>
             </button>
-          </div>
 
-          {sidebarTab === "chapters" ? (
             <button
               onClick={onCreateChapter}
-              className="inline-flex items-center space-x-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-3 py-1.5 rounded-full transition shadow-md shrink-0"
+              className="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black transition shadow-md"
               title="Tambah Bab Baru"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Tambah</span>
+              <Plus className="w-4 h-4 stroke-[3]" />
             </button>
-          ) : (
-            <button
-              onClick={handleOpenAddGlossary}
-              className="inline-flex items-center space-x-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-3 py-1.5 rounded-full transition shadow-md shrink-0"
-              title="Tambah Karakter / Istilah Baru"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Istilah</span>
-            </button>
-          )}
-        </div>
-
-        {/* SIDEBAR TAB 1: CHAPTERS LIST */}
-        {sidebarTab === "chapters" && (
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-            {chapters.map((chap, idx) => {
-              const isSelected = chap.id === activeChapter?.id;
-              return (
-                <div
-                  key={chap.id}
-                  onClick={() => setSelectedChapterId(chap.id)}
-                  className={`w-full text-left p-3 rounded-xl transition cursor-pointer flex items-start justify-between group border-2 ${
-                    isSelected
-                      ? "bg-amber-400 text-slate-950 font-black border-amber-300 shadow-md ring-2 ring-slate-900/20"
-                      : `${currentTheme.bgCard} ${currentTheme.border} hover:border-amber-400/60 text-slate-900 dark:text-slate-100 font-bold`
-                  }`}
-                >
-                  <div className="space-y-1 pr-2 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-xs font-mono font-black ${isSelected ? "text-slate-950" : "text-amber-600"}`}>#{idx + 1}</span>
-                      <h3 className="text-xs font-black truncate">{chap.title}</h3>
-                    </div>
-                    {chap.subtitle && <p className={`text-[11px] truncate ${isSelected ? "text-slate-900 font-semibold" : currentTheme.textMuted}`}>{chap.subtitle}</p>}
-                    <div className="flex items-center space-x-2 pt-1 text-[10px]">
-                      <span className={`px-2 py-0.5 rounded font-black uppercase text-[9px] ${
-                        chap.status === "final" ? "bg-emerald-600 text-white" :
-                        chap.status === "review" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-white"
-                      }`}>
-                        {chap.status}
-                      </span>
-                      <span className={isSelected ? "text-slate-900 font-semibold" : currentTheme.textMuted}>• {chap.lastEditedBy}</span>
-                    </div>
-                  </div>
-
-                  {chapters.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Hapus bab "${chap.title}"?`)) {
-                          onDeleteChapter(chap.id);
-                        }
-                      }}
-                      className={`p-1 transition rounded ${isSelected ? "text-slate-950 hover:bg-slate-950/10" : "text-red-500 hover:text-red-700"}`}
-                      title="Hapus Bab"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
           </div>
-        )}
 
-        {/* SIDEBAR TAB 2: GLOSARIUM PROYEK LIST */}
-        {sidebarTab === "glossary" && (
-          <div className="flex-1 flex flex-col overflow-hidden p-2 space-y-2">
-            
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                value={glossarySearch}
-                onChange={(e) => setGlossarySearch(e.target.value)}
-                placeholder="Cari karakter/istilah..."
-                className={`w-full pl-8 pr-3 py-1.5 border-2 ${currentTheme.border} ${currentTheme.bgCard} text-xs font-bold rounded-xl focus:outline-none focus:border-amber-400`}
-              />
+          {/* Mobile / Tablet Collapsed Top Bar */}
+          <div className="md:hidden flex items-center justify-between p-2.5 bg-slate-900 border-b-2 border-amber-500/30">
+            <button
+              onClick={() => setIsSidebarExpanded(true)}
+              className="flex items-center space-x-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-3 py-1.5 rounded-xl font-black text-xs shadow-md"
+            >
+              <Menu className="w-4 h-4" />
+              <span className="truncate max-w-[200px]">
+                {activeChapter ? activeChapter.title : "Menu Bab"} ({chapters.length})
+              </span>
+            </button>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={onCreateChapter}
+                className="p-1.5 bg-emerald-500 text-slate-950 font-black rounded-lg text-xs flex items-center space-x-1"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span className="text-[10px]">Bab Baru</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+      ) : (
+        /* EXPANDED FULL SIDEBAR */
+        <aside className={`w-full md:w-80 ${currentTheme.bgSidebar} border-r-2 ${currentTheme.border} flex flex-col h-1/2 md:h-full transition-all duration-300 shrink-0`}>
+          
+          {/* Sidebar Header Mode Switcher (Bab vs Glosarium + Collapsible Toggle) */}
+          <div className={`p-2.5 border-b-2 ${currentTheme.border} flex items-center justify-between gap-1`}>
+            <div className="flex items-center space-x-1 bg-slate-900 border-2 border-slate-700 p-1 rounded-full text-xs font-black">
+              <button
+                onClick={() => setSidebarTab("chapters")}
+                className={`px-2.5 py-1 rounded-full transition flex items-center space-x-1 ${
+                  sidebarTab === "chapters" ? "bg-amber-400 text-slate-950 shadow-md" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Bab ({chapters.length})</span>
+              </button>
+
+              <button
+                onClick={() => setSidebarTab("glossary")}
+                className={`px-2.5 py-1 rounded-full transition flex items-center space-x-1 ${
+                  sidebarTab === "glossary" ? "bg-amber-400 text-slate-950 shadow-md" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <BookMarked className="w-3.5 h-3.5" />
+                <span>Glosarium ({glossary.length})</span>
+              </button>
             </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex items-center space-x-1 overflow-x-auto pb-1 text-[10px] font-black shrink-0 no-scrollbar">
-              {["Semua", "Karakter", "Lokasi", "Istilah Dunia", "Aturan Magic/Sains", "Lainnya"].map(cat => (
+            <div className="flex items-center space-x-1">
+              {sidebarTab === "chapters" ? (
                 <button
-                  key={cat}
-                  onClick={() => setGlossaryCategoryFilter(cat)}
-                  className={`px-2.5 py-1 rounded-full whitespace-nowrap border ${
-                    glossaryCategoryFilter === cat
-                      ? "bg-amber-400 text-slate-950 border-amber-300"
-                      : "bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500"
-                  }`}
+                  onClick={onCreateChapter}
+                  className="inline-flex items-center space-x-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-2 py-1.5 rounded-full transition shadow-md shrink-0"
+                  title="Tambah Bab Baru"
                 >
-                  {cat}
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span className="hidden sm:inline">Tambah</span>
                 </button>
-              ))}
-            </div>
-
-            {/* Glossary Items List */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
-              {filteredGlossary.map(item => (
-                <div
-                  key={item.id}
-                  className={`p-3 rounded-2xl border-2 ${currentTheme.border} ${currentTheme.bgCard} space-y-2 shadow-sm transition hover:border-amber-400/80`}
+              ) : (
+                <button
+                  onClick={handleOpenAddGlossary}
+                  className="inline-flex items-center space-x-1 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-2 py-1.5 rounded-full transition shadow-md shrink-0"
+                  title="Tambah Karakter / Istilah Baru"
                 >
-                  <div className="flex items-start justify-between gap-1">
-                    <div className="space-y-0.5 pr-1">
-                      <div className="flex items-center space-x-1.5">
-                        {getCategoryIcon(item.category)}
-                        <span className="text-xs font-black truncate">{item.term}</span>
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span className="hidden sm:inline">Istilah</span>
+                </button>
+              )}
+
+              {/* COLLAPSE TOGGLE BUTTON */}
+              <button
+                onClick={() => setIsSidebarExpanded(false)}
+                className="p-1.5 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl border border-slate-700 transition shadow-sm"
+                title="Ciutkan Bilah Menu"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* SIDEBAR TAB 1: CHAPTERS LIST */}
+          {sidebarTab === "chapters" && (
+            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+              {chapters.map((chap, idx) => {
+                const isSelected = chap.id === activeChapter?.id;
+                return (
+                  <div
+                    key={chap.id}
+                    onClick={() => setSelectedChapterId(chap.id)}
+                    className={`w-full text-left p-3 rounded-xl transition cursor-pointer flex items-start justify-between group border-2 ${
+                      isSelected
+                        ? "bg-amber-400 text-slate-950 font-black border-amber-300 shadow-md ring-2 ring-slate-900/20"
+                        : `${currentTheme.bgCard} ${currentTheme.border} hover:border-amber-400/60 text-slate-900 dark:text-slate-100 font-bold`
+                    }`}
+                  >
+                    <div className="space-y-1 pr-2 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs font-mono font-black ${isSelected ? "text-slate-950" : "text-amber-600"}`}>#{idx + 1}</span>
+                        <h3 className="text-xs font-black truncate">{chap.title}</h3>
                       </div>
-                      <span className="inline-block text-[9px] font-black px-2 py-0.2 rounded-full bg-slate-900 text-amber-300 border border-slate-700">
-                        {item.category}
-                      </span>
+                      {chap.subtitle && <p className={`text-[11px] truncate ${isSelected ? "text-slate-900 font-semibold" : currentTheme.textMuted}`}>{chap.subtitle}</p>}
+                      <div className="flex items-center space-x-2 pt-1 text-[10px]">
+                        <span className={`px-2 py-0.5 rounded font-black uppercase text-[9px] ${
+                          chap.status === "final" ? "bg-emerald-600 text-white" :
+                          chap.status === "review" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-white"
+                        }`}>
+                          {chap.status}
+                        </span>
+                        <span className={isSelected ? "text-slate-900 font-semibold" : currentTheme.textMuted}>• {chap.lastEditedBy}</span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center space-x-1 shrink-0">
+                    {chapters.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Hapus bab "${chap.title}"?`)) {
+                            onDeleteChapter(chap.id);
+                          }
+                        }}
+                        className={`p-1 transition rounded ${isSelected ? "text-slate-950 hover:bg-slate-950/10" : "text-red-500 hover:text-red-700"}`}
+                        title="Hapus Bab"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* SIDEBAR TAB 2: GLOSARIUM PROYEK LIST */}
+          {sidebarTab === "glossary" && (
+            <div className="flex-1 flex flex-col overflow-hidden p-2 space-y-2">
+              
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={glossarySearch}
+                  onChange={(e) => setGlossarySearch(e.target.value)}
+                  placeholder="Cari karakter/istilah..."
+                  className={`w-full pl-8 pr-3 py-1.5 border-2 ${currentTheme.border} ${currentTheme.bgCard} text-xs font-bold rounded-xl focus:outline-none focus:border-amber-400`}
+                />
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center space-x-1 overflow-x-auto pb-1 text-[10px] font-black shrink-0 no-scrollbar">
+                {["Semua", "Karakter", "Lokasi", "Istilah Dunia", "Aturan Magic/Sains", "Lainnya"].map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setGlossaryCategoryFilter(cat)}
+                    className={`px-2.5 py-1 rounded-full whitespace-nowrap border ${
+                      glossaryCategoryFilter === cat
+                        ? "bg-amber-400 text-slate-950 border-amber-300"
+                        : "bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Glossary Items List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
+                {filteredGlossary.map(item => (
+                  <div
+                    key={item.id}
+                    className={`p-3 rounded-2xl border-2 ${currentTheme.border} ${currentTheme.bgCard} space-y-2 shadow-sm transition hover:border-amber-400/80`}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="space-y-0.5 pr-1">
+                        <div className="flex items-center space-x-1.5">
+                          {getCategoryIcon(item.category)}
+                          <span className="text-xs font-black truncate">{item.term}</span>
+                        </div>
+                        <span className="inline-block text-[9px] font-black px-2 py-0.2 rounded-full bg-slate-900 text-amber-300 border border-slate-700">
+                          {item.category}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-1 shrink-0">
+                        <button
+                          onClick={() => handleInsertTermToContent(item.term)}
+                          className="p-1 text-emerald-500 hover:text-emerald-400 rounded hover:bg-slate-800"
+                          title="Sisipkan istilah ini ke naskah"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditGlossary(item)}
+                          className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
+                          title="Edit Istilah"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        {onDeleteGlossaryItem && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Hapus istilah "${item.term}" dari Glosarium?`)) {
+                                onDeleteGlossaryItem(item.id);
+                              }
+                            }}
+                            className="p-1 text-red-400 hover:text-red-300 rounded hover:bg-slate-800"
+                            title="Hapus Istilah"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] leading-relaxed font-medium whitespace-pre-wrap opacity-90 line-clamp-3">
+                      {item.definition || "(Belum ada deskripsi)"}
+                    </p>
+                    
+                    <div className="text-[9px] text-slate-400 font-semibold pt-1 border-t border-slate-800/80 flex items-center justify-between">
+                      <span>Oleh: {item.authorName}</span>
                       <button
                         onClick={() => handleInsertTermToContent(item.term)}
-                        className="p-1 text-emerald-500 hover:text-emerald-400 rounded hover:bg-slate-800"
-                        title="Sisipkan istilah ini ke naskah"
+                        className="text-amber-400 font-bold hover:underline"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        + Sisipkan Nama
                       </button>
-                      <button
-                        onClick={() => handleOpenEditGlossary(item)}
-                        className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-                        title="Edit Istilah"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      {onDeleteGlossaryItem && (
-                        <button
-                          onClick={() => {
-                            if (confirm(`Hapus istilah "${item.term}" dari Glosarium?`)) {
-                              onDeleteGlossaryItem(item.id);
-                            }
-                          }}
-                          className="p-1 text-red-400 hover:text-red-300 rounded hover:bg-slate-800"
-                          title="Hapus Istilah"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
                     </div>
                   </div>
+                ))}
 
-                  <p className="text-[11px] leading-relaxed font-medium whitespace-pre-wrap opacity-90 line-clamp-3">
-                    {item.definition || "(Belum ada deskripsi)"}
-                  </p>
-                  
-                  <div className="text-[9px] text-slate-400 font-semibold pt-1 border-t border-slate-800/80 flex items-center justify-between">
-                    <span>Oleh: {item.authorName}</span>
-                    <button
-                      onClick={() => handleInsertTermToContent(item.term)}
-                      className="text-amber-400 font-bold hover:underline"
-                    >
-                      + Sisipkan Nama
-                    </button>
+                {filteredGlossary.length === 0 && (
+                  <div className={`text-center py-12 ${currentTheme.textMuted} text-xs font-bold space-y-1`}>
+                    <BookMarked className="w-6 h-6 mx-auto opacity-50 mb-2" />
+                    <p>Belum ada istilah glosarium.</p>
+                    <p className="text-[10px] font-normal opacity-80">Klik "+ Istilah" di atas untuk menyimpan karakter atau istilah dunia.</p>
                   </div>
-                </div>
-              ))}
-
-              {filteredGlossary.length === 0 && (
-                <div className={`text-center py-12 ${currentTheme.textMuted} text-xs font-bold space-y-1`}>
-                  <BookMarked className="w-6 h-6 mx-auto opacity-50 mb-2" />
-                  <p>Belum ada istilah glosarium.</p>
-                  <p className="text-[10px] font-normal opacity-80">Klik "+ Istilah" di atas untuk menyimpan karakter atau istilah dunia.</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Studio Active Status Indicator */}
-        <div className={`p-3.5 border-t-2 ${currentTheme.border} text-xs flex items-center justify-between ${currentTheme.textMuted} font-bold`}>
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Penulis Studio: {currentAuthor.name}</span>
+          {/* Studio Active Status Indicator */}
+          <div className={`p-3.5 border-t-2 ${currentTheme.border} text-xs flex items-center justify-between ${currentTheme.textMuted} font-bold`}>
+            <div className="flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Penulis Studio: {currentAuthor.name}</span>
+            </div>
+            <span className="text-[10px] font-mono opacity-80 uppercase tracking-wider">Auto-save ON</span>
           </div>
-          <span className="text-[10px] font-mono opacity-80 uppercase tracking-wider">Auto-save ON</span>
-        </div>
-      </aside>
+        </aside>
+      )}
 
       {/* Main Chapter Writing Area */}
       <main className="flex-1 flex flex-col h-2/3 md:h-full overflow-hidden">
