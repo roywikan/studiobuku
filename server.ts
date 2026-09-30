@@ -1251,6 +1251,26 @@ async function startServer() {
       res.status(500).json({ error: msg || "Gagal memproses permintaan AI." });
     }
   });
+  // Firebase Auth Handler Proxy for Custom Domain studio.buku.biz.id
+  app.use("/__/auth", async (req, res) => {
+    try {
+      const targetUrl = `https://gen-lang-client-0987418952.firebaseapp.com/__/auth${req.url}`;
+      const response = await fetch(targetUrl, {
+        method: req.method,
+        headers: {
+          "user-agent": req.headers["user-agent"] || "",
+          "accept": req.headers["accept"] || "*/*"
+        }
+      });
+      const contentType = response.headers.get("content-type");
+      if (contentType) res.setHeader("content-type", contentType);
+      const body = await response.text();
+      res.status(response.status).send(body);
+    } catch (err: any) {
+      res.status(500).send("Firebase Auth Proxy Error: " + err?.message);
+    }
+  });
+
   app.get("/privacy", (req, res) => {
     res.send(`
       <!DOCTYPE html>
