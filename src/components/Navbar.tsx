@@ -44,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   lastSavedTime,
 }) => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   
@@ -102,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className={`${currentTheme.bgHeader} text-slate-100 border-b border-white/15 sticky top-0 z-30 shadow-2xl transition-colors duration-300`}>
-      <div className="w-full max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-10 xl:px-12 2xl:px-16">
+      <div className="w-full px-2 sm:px-4 lg:px-4 xl:px-6 2xl:px-8">
         <div className="flex items-center justify-between h-20">
           
           {/* Studio Buku Clean Brand Header & Interactive Project Switcher */}
@@ -261,7 +262,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="fixed inset-0 z-40"
                     onClick={() => setIsPaletteOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-72 bg-slate-950 border-2 border-amber-500/50 rounded-2xl shadow-2xl p-3 z-50 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200">
+                  <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 mt-2 sm:w-72 bg-slate-950 border-2 border-amber-500/50 rounded-2xl shadow-2xl p-3 z-50 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200">
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
                       <span className="text-xs font-black text-amber-300 flex items-center space-x-1">
                         <Palette className="w-3.5 h-3.5" />
@@ -342,9 +343,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden lg:inline">Undang</span>
             </button>
 
-            {/* Profile Switcher & Logout Menu */}
-            <div className="relative group">
-              <button className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 border-2 border-amber-500/60 rounded-full py-1.5 px-3.5 text-xs text-white transition shadow-lg cursor-pointer">
+            {/* Clickable Profile Switcher & Logout Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center space-x-2 bg-slate-950 hover:bg-slate-900 border-2 border-amber-500/60 rounded-full py-1.5 px-3.5 text-xs text-white transition shadow-lg cursor-pointer"
+                title="Klik untuk membuka menu profil & logout"
+              >
                 {currentAuthor.avatar && (currentAuthor.avatar.startsWith("http://") || currentAuthor.avatar.startsWith("https://")) ? (
                   <img src={currentAuthor.avatar} alt={currentAuthor.name} className="w-5 h-5 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
                 ) : (
@@ -352,47 +357,60 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
                 <span className="font-extrabold hidden sm:inline">{currentAuthor.name}</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <ChevronDown className="w-3 h-3 text-amber-400" />
               </button>
 
-              {/* Smooth Hover Bridge & Dropdown Box */}
-              <div className="absolute right-0 top-full pt-1 hidden group-hover:block z-50">
-                <div className="w-64 bg-slate-950 border-2 border-slate-800 rounded-2xl shadow-2xl py-2 backdrop-blur-2xl">
-                  <div className="px-3.5 py-1.5 text-[11px] font-black text-amber-300 border-b border-slate-800">
-                    Profil Penulis Studio:
-                  </div>
-                  {authors.map((auth) => (
-                    <button
-                      key={auth.id}
-                      onClick={() => setCurrentAuthor(auth)}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center space-x-2.5 hover:bg-slate-800 transition ${
-                        currentAuthor.id === auth.id ? "bg-amber-400 text-slate-950 font-black" : "text-slate-100 font-bold"
-                      }`}
-                    >
-                      {auth.avatar && (auth.avatar.startsWith("http://") || auth.avatar.startsWith("https://")) ? (
-                        <img src={auth.avatar} alt={auth.name} className="w-6 h-6 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
-                      ) : (
-                        <span className="text-base">{auth.avatar || "✍️"}</span>
-                      )}
-                      <div>
-                        <div className="font-extrabold">{auth.name}</div>
-                        <div className={`text-[10px] ${currentAuthor.id === auth.id ? "text-slate-900 font-semibold" : "text-slate-400"}`}>{auth.role}</div>
-                      </div>
-                    </button>
-                  ))}
-
-                  {onLogout && (
-                    <div className="pt-1 mt-1 border-t border-slate-800 px-2">
-                      <button
-                        onClick={onLogout}
-                        className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/20 transition cursor-pointer"
-                      >
-                        <Lock className="w-3.5 h-3.5 text-red-400" />
-                        <span>Kunci & Keluar Studio</span>
-                      </button>
+              {isProfileOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsProfileOpen(false)}
+                  />
+                  <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 mt-2 sm:w-64 bg-slate-950 border-2 border-amber-500/50 rounded-2xl shadow-2xl py-2 z-50 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="px-3.5 py-1.5 text-[11px] font-black text-amber-300 border-b border-slate-800 flex items-center justify-between">
+                      <span>Profil Penulis Studio:</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Pilih / Keluar</span>
                     </div>
-                  )}
-                </div>
-              </div>
+                    {authors.map((auth) => (
+                      <button
+                        key={auth.id}
+                        onClick={() => {
+                          setCurrentAuthor(auth);
+                          setIsProfileOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2 text-xs flex items-center space-x-2.5 hover:bg-slate-800 transition ${
+                          currentAuthor.id === auth.id ? "bg-amber-400 text-slate-950 font-black" : "text-slate-100 font-bold"
+                        }`}
+                      >
+                        {auth.avatar && (auth.avatar.startsWith("http://") || auth.avatar.startsWith("https://")) ? (
+                          <img src={auth.avatar} alt={auth.name} className="w-6 h-6 rounded-full object-cover border border-amber-400/60 inline-block shrink-0" />
+                        ) : (
+                          <span className="text-base">{auth.avatar || "✍️"}</span>
+                        )}
+                        <div>
+                          <div className="font-extrabold">{auth.name}</div>
+                          <div className={`text-[10px] ${currentAuthor.id === auth.id ? "text-slate-900 font-semibold" : "text-slate-400"}`}>{auth.role}</div>
+                        </div>
+                      </button>
+                    ))}
+
+                    {onLogout && (
+                      <div className="pt-1 mt-1 border-t border-slate-800 px-2">
+                        <button
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            onLogout();
+                          }}
+                          className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/20 transition cursor-pointer"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-red-400" />
+                          <span>Kunci & Keluar Studio</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
           </div>
