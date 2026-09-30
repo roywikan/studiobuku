@@ -3,16 +3,7 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
-// Support custom domain authDomain for studio.buku.biz.id and studiobuku.pages.dev
-const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
-const dynamicAuthDomain = (currentHostname.includes('buku.biz.id') || currentHostname.includes('pages.dev'))
-  ? currentHostname
-  : firebaseConfig.authDomain;
-
-const app = initializeApp({
-  ...firebaseConfig,
-  authDomain: dynamicAuthDomain
-});
+const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
