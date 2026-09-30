@@ -113,7 +113,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
 
         <div className="text-center space-y-3 relative z-10">
           <div className="inline-flex items-center justify-center p-3 bg-amber-400/10 rounded-2xl border border-amber-400/30">
-            <StudioBukuLogo tagline="Nulis Buku Bareng" size="lg" />
+            <StudioBukuLogo tagline="Nulis Buku Bareng" size="lg" alwaysShowText={true} />
           </div>
           <p className="text-xs text-slate-300 max-w-sm mx-auto font-medium">
             Masuk dengan Akun Google atau Sandi Penulis untuk mengakses ruang kerja naskah Anda.

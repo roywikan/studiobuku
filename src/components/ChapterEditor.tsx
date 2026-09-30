@@ -570,21 +570,25 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
                 />
               </div>
 
-              {/* Category Filter Pills */}
-              <div className="flex items-center space-x-1 overflow-x-auto pb-1 text-[10px] font-black shrink-0 no-scrollbar">
-                {["Semua", "Karakter", "Lokasi", "Istilah Dunia", "Aturan Magic/Sains", "Lainnya"].map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setGlossaryCategoryFilter(cat)}
-                    className={`px-2.5 py-1 rounded-full whitespace-nowrap border ${
-                      glossaryCategoryFilter === cat
-                        ? "bg-amber-400 text-slate-950 border-amber-300"
-                        : "bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+              {/* Category Filter Pills with Left/Right Swipe Arrow Clues */}
+              <div className="flex items-center space-x-1">
+                <ChevronLeft className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
+                <div className="flex items-center space-x-1 overflow-x-auto pb-1 text-[10px] font-black shrink-0 flex-1">
+                  {["Semua", "Karakter", "Lokasi", "Istilah Dunia", "Aturan Magic/Sains", "Lainnya"].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setGlossaryCategoryFilter(cat)}
+                      className={`px-2.5 py-1 rounded-full whitespace-nowrap border ${
+                        glossaryCategoryFilter === cat
+                          ? "bg-amber-400 text-slate-950 border-amber-300"
+                          : "bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
               </div>
 
               {/* Glossary Items List */}

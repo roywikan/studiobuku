@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Author, Project } from "../types";
 import { WriterTheme, WRITER_THEMES } from "../theme";
 import { StudioBukuLogo } from "./StudioBukuLogo";
-import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, FolderPlus, BookOpen, LogOut, Lock } from "lucide-react";
+import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, LogOut, Lock } from "lucide-react";
 
 interface NavbarProps {
   activeTab: "editor" | "ideas" | "logs" | "preview" | "ai";
@@ -46,6 +46,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  
+  // Auto Folding Mobile/Tablet Top Menu State
+  const [isMobileNavFolded, setIsMobileNavFolded] = useState(false);
+  const lastScrollY = React.useRef(0);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > 60 && currentScrollY > lastScrollY.current + 10) {
+        // Scrolling down -> auto fold on mobile/tablet to give maximum writing room
+        setIsMobileNavFolded(true);
+      } else if (currentScrollY < lastScrollY.current - 15 || currentScrollY < 20) {
+        // Scrolling up -> auto expand top bar
+        setIsMobileNavFolded(false);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // New Project Form State
   const [newTitle, setNewTitle] = useState("");
@@ -377,55 +398,90 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Mobile Navigation Bar */}
-        <div className="lg:hidden py-2 border-t border-white/15 flex flex-col items-center space-y-2">
-          {/* Mobile Auto-Save Indicator */}
-          <div className="flex items-center">
-            {saveStatus === "typing" && (
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                <span>Saving...</span>
-              </div>
-            )}
-            {saveStatus === "saving" && (
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                <RefreshCw className="w-3 h-3 text-amber-300 animate-spin" />
-                <span>Saving...</span>
-              </div>
-            )}
-            {(saveStatus === "saved" || saveStatus === "idle") && (
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span>Saved</span>
-              </div>
-            )}
-            {saveStatus === "error" && (
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-500/20 text-red-300 border border-red-500/40">
-                <AlertCircle className="w-3 h-3 text-red-400" />
-                <span>Saving Error</span>
-              </div>
-            )}
+        {/* Mobile / Tablet Auto-Folding Navigation Bar */}
+        {isMobileNavFolded ? (
+          <div
+            onClick={() => setIsMobileNavFolded(false)}
+            className="lg:hidden py-1.5 px-3 border-t border-white/15 flex items-center justify-between cursor-pointer bg-slate-950/80 hover:bg-slate-900 transition text-amber-300 font-black text-[11px]"
+            title="Ketuk / Sentuh untuk Buka Bilah Menu Header"
+          >
+            <div className="flex items-center space-x-2 truncate">
+              <StudioBukuLogo size="sm" />
+              <span className="truncate">{project.title}</span>
+            </div>
+            <div className="flex items-center space-x-1 text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30 shrink-0 font-extrabold">
+              <span>Buka Menu</span>
+              <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
+            </div>
           </div>
+        ) : (
+          <div className="lg:hidden py-2 border-t border-white/15 flex flex-col items-center space-y-2">
+            {/* Mobile Auto-Save Indicator & Manual Fold Button */}
+            <div className="flex items-center justify-between w-full px-2">
+              <div className="flex items-center">
+                {saveStatus === "typing" && (
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    <span>Saving...</span>
+                  </div>
+                )}
+                {saveStatus === "saving" && (
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    <RefreshCw className="w-3 h-3 text-amber-300 animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                )}
+                {(saveStatus === "saved" || saveStatus === "idle") && (
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span>Saved</span>
+                  </div>
+                )}
+                {saveStatus === "error" && (
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-500/20 text-red-300 border border-red-500/40">
+                    <AlertCircle className="w-3 h-3 text-red-400" />
+                    <span>Saving Error</span>
+                  </div>
+                )}
+              </div>
 
-          <div className={`${currentTheme.bgIslandContainer} px-2 py-1.5 rounded-full border-2 border-white/20 shadow-xl flex items-center space-x-1.5 overflow-x-auto max-w-full`}>
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all duration-200 ${
-                    isActive
-                      ? "bg-amber-400 text-slate-950 shadow-md scale-105"
-                      : "text-white hover:text-amber-200"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+              <button
+                onClick={() => setIsMobileNavFolded(true)}
+                className="p-1 rounded-lg bg-slate-900 border border-slate-700 text-amber-300 hover:text-white transition flex items-center space-x-1 text-[10px] font-bold"
+                title="Lipat Header Menu"
+              >
+                <span>Lipat</span>
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Horizontally Scrollable Menu Tabs with Left/Right Arrow Clues */}
+            <div className="flex items-center space-x-1 w-full max-w-full px-1">
+              <ChevronLeft className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+              
+              <div className={`${currentTheme.bgIslandContainer} px-2 py-1.5 rounded-full border-2 border-white/20 shadow-xl flex items-center space-x-1.5 overflow-x-auto flex-1 max-w-full`}>
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all duration-200 ${
+                        isActive
+                          ? "bg-amber-400 text-slate-950 shadow-md scale-105"
+                          : "text-white hover:text-amber-200"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <ChevronRight className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 
