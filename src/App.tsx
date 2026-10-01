@@ -313,7 +313,7 @@ export default function App() {
               projects={db?.projects || initialDefaultDb.projects}
               chapters={db?.chapters || initialDefaultDb.chapters}
               onSelectPublicProject={(p) => {
-                window.open(`/p/${slugify(p.title)}`, "_blank");
+                window.location.href = `/p/${slugify(p.title)}`;
               }}
             />
           </React.Suspense>

@@ -188,6 +188,7 @@ function linkifyGlossary(text: string, glossary: GlossaryTerm[]): string {
 
 async function startServer() {
   const app = express();
+  let vite: any = null;
   app.use(express.json({ limit: "15mb" }));
 
   // API Routes
@@ -1824,7 +1825,7 @@ Sitemap: https://studio.buku.biz.id/sitemap.xml
 `);
   });
 
-  app.use(express.static(process.cwd()));
+  app.use(express.static(path.join(process.cwd(), "public")));
 
   // Privacy Policy Route (Google Auth & AdSense Compliant - Light Corporate)
   app.get("/privacy", (req, res) => {
@@ -2073,13 +2074,21 @@ Sitemap: https://studio.buku.biz.id/sitemap.xml
     `);
   });
 
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: "spa",
-  });
-  app.use(vite.middlewares);
+  if (process.env.NODE_ENV === "production" && fs.existsSync(path.join(process.cwd(), "dist"))) {
+    app.use(express.static(path.join(process.cwd(), "dist")));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/")) return next();
+      res.sendFile(path.join(process.cwd(), "dist", "index.html"));
+    });
+  } else {
+    vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  }
 
-  const PORT = 3000;
+  const PORT = parseInt(process.env.PORT || "3000", 10);
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Studio Buku server running on http://localhost:${PORT}`);
   });
