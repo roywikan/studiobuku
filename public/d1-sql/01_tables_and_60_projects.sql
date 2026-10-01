@@ -1,10 +1,9 @@
 -- ==========================================================
--- STUDIO BUKU DATABASE SCHEMA & COMPLETE SEED DATA (Cloudflare D1)
+-- STUDIO BUKU DATABASE SCHEMA & SEED DATA (Cloudflare D1)
 -- Database Name: studiobuku-db
 -- Total Projects: 60 | Total Chapters: 480
 -- ==========================================================
 
--- 1. TABEL PROYEK NASKAH BUKU
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -18,7 +17,6 @@ CREATE TABLE IF NOT EXISTS projects (
   coAuthors TEXT
 );
 
--- 2. TABEL BAB & DRAF EDITOR
 CREATE TABLE IF NOT EXISTS chapters (
   id TEXT PRIMARY KEY,
   projectId TEXT NOT NULL,
@@ -32,7 +30,6 @@ CREATE TABLE IF NOT EXISTS chapters (
   FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
 );
 
--- 3. TABEL PENULIS
 CREATE TABLE IF NOT EXISTS authors (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -41,7 +38,6 @@ CREATE TABLE IF NOT EXISTS authors (
   color TEXT
 );
 
--- 4. TABEL GLOSARIUM & ISTILAH DUNIA
 CREATE TABLE IF NOT EXISTS glossary (
   id TEXT PRIMARY KEY,
   projectId TEXT NOT NULL,
@@ -53,7 +49,6 @@ CREATE TABLE IF NOT EXISTS glossary (
   FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
 );
 
--- 5. TABEL PAPAN GAGASAN / IDE
 CREATE TABLE IF NOT EXISTS ideas (
   id TEXT PRIMARY KEY,
   projectId TEXT NOT NULL,
@@ -66,7 +61,6 @@ CREATE TABLE IF NOT EXISTS ideas (
   FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
 );
 
--- 6. TABEL LOG REVISI
 CREATE TABLE IF NOT EXISTS logs (
   id TEXT PRIMARY KEY,
   projectId TEXT NOT NULL,
@@ -78,7 +72,6 @@ CREATE TABLE IF NOT EXISTS logs (
   FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
 );
 
--- 7. TABEL ANOTASI
 CREATE TABLE IF NOT EXISTS annotations (
   id TEXT PRIMARY KEY,
   projectId TEXT NOT NULL,
@@ -92,7 +85,7 @@ CREATE TABLE IF NOT EXISTS annotations (
 );
 
 -- ==========================================================
--- SEED DATA PENULIS
+-- SEED DATA PENULIS (4 PENULIS)
 -- ==========================================================
 INSERT OR REPLACE INTO authors (id, name, role, avatar, color) VALUES ('auth_1', 'Rian Hidayat', 'Penulis Utama', '👨‍💻', 'bg-emerald-500');
 INSERT OR REPLACE INTO authors (id, name, role, avatar, color) VALUES ('auth_2', 'Kirana Maharani', 'Penulis Studio', '👩‍🎨', 'bg-indigo-500');
@@ -162,5 +155,3 @@ INSERT OR REPLACE INTO projects (id, title, subtitle, genre, synopsis, createdAt
 INSERT OR REPLACE INTO projects (id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors) VALUES ('proj_58', 'Menembus Kabut Gunung Bromo', 'Petualangan Fotografer Alam Di Kaldera', 'Petualangan', 'Naskah "Menembus Kabut Gunung Bromo" — Petualangan Fotografer Alam Di Kaldera. Dikembangkan secara kolaboratif oleh Rian Hidayat bersama tim co-author Studio Buku.', '2026-09-03T00:00:00.000Z', 0, 'auth_1', 'Rian Hidayat', '["Rian Hidayat","Siti Rahmania"]');
 INSERT OR REPLACE INTO projects (id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors) VALUES ('proj_59', 'Sosiologi Pasar Tradisional Di Era Digital', 'Pergeseran Pola Transaksi Dan Ikatan Sosial', 'Sosiologi & Budaya', 'Naskah "Sosiologi Pasar Tradisional Di Era Digital" — Pergeseran Pola Transaksi Dan Ikatan Sosial. Dikembangkan secara kolaboratif oleh Siti Rahmania bersama tim co-author Studio Buku.', '2026-09-02T00:00:00.000Z', 0, 'auth_4', 'Siti Rahmania', '["Kirana Maharani","Bagus Setiawan"]');
 INSERT OR REPLACE INTO projects (id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors) VALUES ('proj_60', 'Lorong Waktu Di Kampung Cyber Jogja', 'Novel Fiksi Spekulatif Teknologi Dan Tradisi', 'Fiksi / Spekulatif', 'Naskah "Lorong Waktu Di Kampung Cyber Jogja" — Novel Fiksi Spekulatif Teknologi Dan Tradisi. Dikembangkan secara kolaboratif oleh Rian Hidayat bersama tim co-author Studio Buku.', '2026-09-01T00:00:00.000Z', 0, 'auth_1', 'Rian Hidayat', '["Rian Hidayat","Siti Rahmania"]');
-
--- ==========================================================
