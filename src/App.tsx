@@ -51,7 +51,9 @@ function slugify(text: string): string {
 
 function cleanChapterContent(content: string = ""): string {
   if (!content) return "";
-  return content.replace(/\n*--- Catatan Penulis[\s\S]*$/, "").trim();
+  let text = content.replace(/^\[\[[\s\S]*?\]\]\s*/, "");
+  text = text.replace(/\n*--- Catatan Penulis[\s\S]*$/, "");
+  return text.trim();
 }
 
 function normalizeProject(p: any): Project {
@@ -505,7 +507,12 @@ export default function App() {
   // Handlers for Chapters
   const handleUpdateChapter = async (chapter: Chapter, actionDescription: string) => {
     try {
-      const updatedChapters = db.chapters.map(c => c.id === chapter.id ? { ...chapter, updatedAt: new Date().toISOString() } : c);
+      const sanitizedChapter = {
+        ...chapter,
+        content: cleanChapterContent(chapter.content),
+        updatedAt: new Date().toISOString()
+      };
+      const updatedChapters = db.chapters.map(c => c.id === chapter.id ? sanitizedChapter : c);
       const updatedDb = { ...db, chapters: updatedChapters };
       setDb(updatedDb);
       localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
@@ -514,7 +521,7 @@ export default function App() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...chapter,
+          ...sanitizedChapter,
           authorName: currentAuthor.name,
           actionDescription
         })

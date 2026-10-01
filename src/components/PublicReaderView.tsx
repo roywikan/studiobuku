@@ -85,7 +85,9 @@ function linkifyGlossaryText(text: string, glossary: GlossaryItem[], onTermClick
 
 function cleanChapterContent(content: string = ""): string {
   if (!content) return "";
-  return content.replace(/\n*--- Catatan Penulis[\s\S]*$/, "").trim();
+  let text = content.replace(/^\[\[[\s\S]*?\]\]\s*/, "");
+  text = text.replace(/\n*--- Catatan Penulis[\s\S]*$/, "");
+  return text.trim();
 }
 
 export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb }) => {

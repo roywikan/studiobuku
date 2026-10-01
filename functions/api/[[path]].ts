@@ -88,6 +88,21 @@ const defaultData = {
   ]
 };
 
+function cleanChapterContent(content: string = ""): string {
+  if (!content) return "";
+  let text = content.replace(/^\[\[[\s\S]*?\]\]\s*/, "");
+  text = text.replace(/\n*--- Catatan Penulis[\s\S]*$/, "");
+  return text.trim();
+}
+
+function normalizeD1Chapter(c: any) {
+  if (!c) return c;
+  return {
+    ...c,
+    content: cleanChapterContent(c.content)
+  };
+}
+
 function normalizeD1Project(p: any) {
   if (!p) return p;
   let coAuthorsArr: string[] = [];
@@ -197,7 +212,7 @@ export async function onRequest(context: { request: Request; env: Env; params: {
                 c.projectId,
                 c.title,
                 c.subtitle || "",
-                c.content || "",
+                cleanChapterContent(c.content || ""),
                 c.order || 1,
                 c.status || "draft",
                 c.lastEditedBy || "Penulis Studio",
@@ -241,10 +256,13 @@ export async function onRequest(context: { request: Request; env: Env; params: {
         const rawProjects = (projectsRes.results && projectsRes.results.length > 0) ? projectsRes.results : defaultData.projects;
         const normalizedProjects = rawProjects.map(normalizeD1Project);
 
+        const rawChapters = (chaptersRes.results && chaptersRes.results.length > 0) ? chaptersRes.results : defaultData.chapters;
+        const normalizedChapters = rawChapters.map(normalizeD1Chapter);
+
         const dbData = {
           authors: defaultData.authors,
           projects: normalizedProjects,
-          chapters: (chaptersRes.results && chaptersRes.results.length > 0) ? chaptersRes.results : defaultData.chapters,
+          chapters: normalizedChapters,
           ideas: ideasRes.results || defaultData.ideas,
           logs: logsRes.results || defaultData.logs,
           glossary: (glossaryRes.results && glossaryRes.results.length > 0) ? glossaryRes.results : defaultData.glossary,
@@ -329,12 +347,13 @@ export async function onRequest(context: { request: Request; env: Env; params: {
     // POST /api/chapters
     if (path === "chapters" && request.method === "POST") {
       const body = await request.json() as any;
+      const cleanContent = cleanChapterContent(body.content || "");
       const newChap = {
         id: "chap_" + Date.now(),
         projectId: body.projectId || "proj_1",
         title: body.title || "Bab Baru",
         subtitle: body.subtitle || "",
-        content: body.content || "",
+        content: cleanContent,
         order: body.order || 1,
         status: body.status || "draft",
         lastEditedBy: body.authorName || "Penulis",
@@ -354,10 +373,11 @@ export async function onRequest(context: { request: Request; env: Env; params: {
     if (path.startsWith("chapters/") && request.method === "PUT") {
       const chapId = path.split("/")[1];
       const body = await request.json() as any;
+      const cleanContent = cleanChapterContent(body.content || "");
 
       if (env.DB) {
         await env.DB.prepare("UPDATE chapters SET title = ?, subtitle = ?, content = ?, status = ?, lastEditedBy = ?, updatedAt = ? WHERE id = ?")
-          .bind(body.title, body.subtitle || "", body.content, body.status || "draft", body.authorName || "Penulis", new Date().toISOString(), chapId)
+          .bind(body.title, body.subtitle || "", cleanContent, body.status || "draft", body.authorName || "Penulis", new Date().toISOString(), chapId)
           .run();
       }
 

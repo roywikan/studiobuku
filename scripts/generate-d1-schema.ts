@@ -2,6 +2,13 @@ import fs from "fs";
 import path from "path";
 import { INITIAL_SEED_DB } from "../src/seedData";
 
+function cleanChapterContent(content: string = ""): string {
+  if (!content) return "";
+  let text = content.replace(/^\[\[[\s\S]*?\]\]\s*/, "");
+  text = text.replace(/\n*--- Catatan Penulis[\s\S]*$/, "");
+  return text.trim();
+}
+
 function toSqlString(str: string | undefined | null): string {
   if (!str) return "''";
   const lines = str.split("\n");
@@ -118,8 +125,9 @@ CREATE TABLE IF NOT EXISTS annotations (
 
   const chapterStatements: string[] = [];
   chapters.forEach((c) => {
+    const cleanContent = cleanChapterContent(c.content);
     chapterStatements.push(
-      `INSERT OR REPLACE INTO chapters (id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt) VALUES (${toSqlString(c.id)}, ${toSqlString(c.projectId)}, ${toSqlString(c.title)}, ${toSqlString(c.subtitle)}, ${toSqlString(c.content)}, ${c.order}, ${toSqlString(c.status)}, ${toSqlString(c.lastEditedBy)}, ${toSqlString(c.updatedAt)});`
+      `INSERT OR REPLACE INTO chapters (id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt) VALUES (${toSqlString(c.id)}, ${toSqlString(c.projectId)}, ${toSqlString(c.title)}, ${toSqlString(c.subtitle)}, ${toSqlString(cleanContent)}, ${c.order}, ${toSqlString(c.status)}, ${toSqlString(c.lastEditedBy)}, ${toSqlString(c.updatedAt)});`
     );
   });
 
