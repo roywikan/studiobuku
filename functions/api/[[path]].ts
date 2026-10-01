@@ -234,6 +234,38 @@ export async function onRequest(context: { request: Request; env: Env; params: {
       }
     }
 
+    // GET /api/public/projects
+    if (path === "public/projects") {
+      const url = new URL(request.url);
+      const page = parseInt(url.searchParams.get("page") || "1", 10) || 1;
+      const limit = parseInt(url.searchParams.get("limit") || "12", 10) || 12;
+
+      let allProjects: any[] = [];
+      if (env.DB) {
+        try {
+          const res = await env.DB.prepare("SELECT * FROM projects WHERE isPrivate = 0 ORDER BY createdAt DESC").all();
+          allProjects = res.results || [];
+        } catch {}
+      }
+
+      if (allProjects.length === 0) {
+        allProjects = defaultData.projects;
+      }
+
+      const total = allProjects.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const startIndex = (page - 1) * limit;
+      const paginated = allProjects.slice(startIndex, startIndex + limit);
+
+      return new Response(JSON.stringify({
+        projects: paginated,
+        total,
+        page,
+        limit,
+        totalPages
+      }), { headers: jsonHeaders });
+    }
+
     // POST /api/projects
     if (path === "projects" && request.method === "POST") {
       const body = await request.json() as any;

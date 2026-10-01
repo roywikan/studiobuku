@@ -16,15 +16,6 @@ const app = initializeApp({
 
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Optional handle to (default) database in case user inspects the default Firestore instance
-let defaultDbInstance: any = null;
-try {
-  defaultDbInstance = getFirestore(app);
-} catch {
-  defaultDbInstance = null;
-}
-export const defaultDb = defaultDbInstance;
-
 export { firebaseConfig };
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
