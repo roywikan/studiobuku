@@ -98,6 +98,13 @@ interface DB {
   glossary?: GlossaryTerm[];
 }
 
+function cleanChapterContent(content: string = ""): string {
+  if (!content) return "";
+  let text = content.replace(/^\[\[[\s\S]*?\]\]\s*/, "");
+  text = text.replace(/\n*--- Catatan Penulis[\s\S]*$/, "");
+  return text.trim();
+}
+
 const initialDb: DB = INITIAL_SEED_DB;
 function readDb(): DB {
   try {
@@ -105,6 +112,13 @@ function readDb(): DB {
       const data = fs.readFileSync(DB_FILE, "utf-8");
       const parsed = JSON.parse(data);
       if (!parsed.glossary) parsed.glossary = initialDb.glossary;
+
+      if (parsed.chapters && Array.isArray(parsed.chapters)) {
+        parsed.chapters = parsed.chapters.map((c: any) => ({
+          ...c,
+          content: cleanChapterContent(c.content)
+        }));
+      }
 
       // Migrate / Normalize schema for isPrivate, ownerId, ownerName, coAuthors
       if (parsed.projects && Array.isArray(parsed.projects)) {
@@ -324,7 +338,7 @@ async function startServer() {
       projectId: projectId || "proj_1",
       title: title || "Bab Baru",
       subtitle: subtitle || "",
-      content: content || "",
+      content: cleanChapterContent(content || ""),
       order: order || db.chapters.length + 1,
       status: status || "draft",
       lastEditedBy: authorName || "Penulis",
@@ -354,6 +368,7 @@ async function startServer() {
     const updated = {
       ...db.chapters[index],
       ...req.body,
+      content: req.body.content !== undefined ? cleanChapterContent(req.body.content) : db.chapters[index].content,
       updatedAt: new Date().toISOString()
     };
     db.chapters[index] = updated;

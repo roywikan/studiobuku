@@ -218,7 +218,7 @@ export function generateSeedDatabase(): DB {
         projectId: projId,
         title: `${tpl.title} — ${item.title}`,
         subtitle: tpl.subtitle,
-        content: `[[ ${item.title.toUpperCase()} — BAB ${cIdx + 1} ]]\n\n${tpl.content}`,
+        content: tpl.content,
         order: cIdx + 1,
         status: cIdx < 6 ? "final" : "review",
         lastEditedBy: item.owner,
