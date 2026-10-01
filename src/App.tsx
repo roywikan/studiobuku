@@ -11,6 +11,7 @@ import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
 import { PublicReaderView } from "./components/PublicReaderView";
+import { PublicProjectGallery } from "./components/PublicProjectGallery";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
 
@@ -110,7 +111,7 @@ export default function App() {
   });
 
   const [db, setDb] = useState<DB | null>(null);
-  const [activeTab, setActiveTab] = useState<"editor" | "ideas" | "logs" | "preview" | "ai">("editor");
+  const [activeTab, setActiveTab] = useState<"editor" | "ideas" | "logs" | "preview" | "ai" | "gallery">("editor");
   const [currentAuthor, setCurrentAuthor] = useState<Author | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [selectedChapterId, setSelectedChapterId] = useState<string>("");
@@ -239,14 +240,38 @@ export default function App() {
     );
   }
 
-  const project = db.projects.find(p => p.id === selectedProjectId) || db.projects[0] || initialDefaultDb.projects[0];
+  // Author privilege project filtering:
+  // A logged in author can ONLY see & edit projects they initiated (ownerId) OR were invited to co-author (coAuthors)
+  const authorProjects = (db.projects || []).filter((p) => {
+    if (!currentAuthor && !userSession) return true;
+    const authorId = currentAuthor?.id || userSession?.id || "";
+    const authorName = currentAuthor?.name || userSession?.name || "";
+    const authorEmail = userSession?.email || "";
 
-  const currentProjectChapters = db.chapters.filter(c => c.projectId === project.id);
-  const currentProjectIdeas = db.ideas.filter(i => i.projectId === project.id);
-  const currentProjectLogs = db.logs.filter(l => l.projectId === project.id);
+    // Legacy project fallback: if no ownerId is set, default accessible to initial authors
+    if (!p.ownerId) return true;
+
+    const isOwner = p.ownerId === authorId || p.ownerId === authorName || p.ownerId === authorEmail;
+    const isCoAuthor = (p.coAuthors || []).some(
+      (ca) => ca === authorId || ca === authorName || ca === authorEmail
+    );
+
+    return isOwner || isCoAuthor;
+  });
+
+  const project =
+    authorProjects.find((p) => p.id === selectedProjectId) ||
+    authorProjects[0] ||
+    db.projects.find((p) => p.id === selectedProjectId) ||
+    db.projects[0] ||
+    initialDefaultDb.projects[0];
+
+  const currentProjectChapters = db.chapters.filter((c) => c.projectId === project.id);
+  const currentProjectIdeas = db.ideas.filter((i) => i.projectId === project.id);
+  const currentProjectLogs = db.logs.filter((l) => l.projectId === project.id);
 
   // Handlers for Projects - INSTANT UI RESPONSE
-  const handleCreateProject = async (newProjData: { title: string; subtitle: string; genre: string; synopsis: string }) => {
+  const handleCreateProject = async (newProjData: { title: string; subtitle: string; genre: string; synopsis: string; isPrivate?: boolean }) => {
     try {
       const newProjId = "proj_" + Date.now();
       const newProj: Project = {
@@ -255,7 +280,11 @@ export default function App() {
         subtitle: newProjData.subtitle,
         genre: newProjData.genre,
         synopsis: newProjData.synopsis,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        isPrivate: !!newProjData.isPrivate,
+        ownerId: currentAuthor.id || userSession?.id || "auth_1",
+        ownerName: currentAuthor.name || userSession?.name || "Penulis Studio",
+        coAuthors: []
       };
 
       const firstChapId = "chap_" + Date.now();
@@ -287,12 +316,41 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newProjData,
-          authorName: currentAuthor.name
+          ownerId: currentAuthor.id || userSession?.id,
+          ownerName: currentAuthor.name || userSession?.name,
+          authorName: currentAuthor.name,
+          coAuthors: []
         })
       });
     } catch (e) {
       console.warn("Project created locally in state:", e);
     }
+  };
+
+  const handleUpdateProject = async (updates: Partial<Project>) => {
+    if (!project) return;
+    try {
+      const updatedProjects = db.projects.map((p) =>
+        p.id === project.id ? { ...p, ...updates } : p
+      );
+      const updatedDb = { ...db, projects: updatedProjects };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
+      await fetch(`/api/projects/${project.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+    } catch (e) {
+      console.warn("Project updated locally:", e);
+    }
+  };
+
+  const handleRunDatabaseBootstrap = async () => {
+    const res = await fetch("/api/db/bootstrap", { method: "POST" });
+    if (!res.ok) throw new Error("Gagal melakukan bootstrap database");
+    await loadData(selectedProjectId);
   };
 
   const handleSelectProject = (projId: string) => {
@@ -492,9 +550,11 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         project={project}
-        projects={db.projects}
+        projects={authorProjects}
         onSelectProject={handleSelectProject}
         onCreateProject={handleCreateProject}
+        onUpdateProject={handleUpdateProject}
+        onRunDatabaseBootstrap={handleRunDatabaseBootstrap}
         authors={db.authors}
         currentAuthor={currentAuthor}
         setCurrentAuthor={setCurrentAuthor}
@@ -509,6 +569,19 @@ export default function App() {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
+        {activeTab === "gallery" && (
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+            <PublicProjectGallery
+              projects={db.projects}
+              chapters={db.chapters}
+              onSelectPublicProject={(p) => {
+                setSelectedProjectId(p.id);
+                setActiveTab("preview");
+              }}
+            />
+          </div>
+        )}
+
         {activeTab === "editor" && (
           <ChapterEditor
             chapters={currentProjectChapters}

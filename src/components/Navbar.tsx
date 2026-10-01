@@ -2,15 +2,18 @@ import React, { useState } from "react";
 import { Author, Project } from "../types";
 import { WriterTheme, WRITER_THEMES } from "../theme";
 import { StudioBukuLogo } from "./StudioBukuLogo";
-import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, LogOut, Lock } from "lucide-react";
+import { ProjectSettingsModal } from "./ProjectSettingsModal";
+import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, Lock, Globe, Settings, LayoutGrid } from "lucide-react";
 
 interface NavbarProps {
-  activeTab: "editor" | "ideas" | "logs" | "preview" | "ai";
-  setActiveTab: (tab: "editor" | "ideas" | "logs" | "preview" | "ai") => void;
+  activeTab: "editor" | "ideas" | "logs" | "preview" | "ai" | "gallery";
+  setActiveTab: (tab: "editor" | "ideas" | "logs" | "preview" | "ai" | "gallery") => void;
   project: Project;
   projects?: Project[];
   onSelectProject?: (id: string) => void;
-  onCreateProject?: (proj: { title: string; subtitle: string; genre: string; synopsis: string }) => void;
+  onCreateProject?: (proj: { title: string; subtitle: string; genre: string; synopsis: string; isPrivate?: boolean }) => void;
+  onUpdateProject?: (updated: Partial<Project>) => Promise<void> | void;
+  onRunDatabaseBootstrap?: () => Promise<void>;
   authors: Author[];
   currentAuthor: Author;
   setCurrentAuthor: (author: Author) => void;
@@ -31,6 +34,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   projects = [],
   onSelectProject,
   onCreateProject,
+  onUpdateProject,
+  onRunDatabaseBootstrap,
   authors,
   currentAuthor,
   setCurrentAuthor,
@@ -47,7 +52,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
-  
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
+
   // Auto Folding Mobile/Tablet Top Menu State
   const [isMobileNavFolded, setIsMobileNavFolded] = useState(false);
   const lastScrollY = React.useRef(0);
@@ -56,10 +62,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY > 60 && currentScrollY > lastScrollY.current + 10) {
-        // Scrolling down -> auto fold on mobile/tablet to give maximum writing room
         setIsMobileNavFolded(true);
       } else if (currentScrollY < lastScrollY.current - 15 || currentScrollY < 20) {
-        // Scrolling up -> auto expand top bar
         setIsMobileNavFolded(false);
       }
       lastScrollY.current = currentScrollY;
@@ -74,6 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [newSubtitle, setNewSubtitle] = useState("");
   const [newGenre, setNewGenre] = useState("Fiksi / Novel");
   const [newSynopsis, setNewSynopsis] = useState("");
+  const [newIsPrivate, setNewIsPrivate] = useState(false);
 
   const handleCreateProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,21 +89,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         subtitle: newSubtitle.trim() || "Naskah Baru Studio Buku",
         genre: newGenre.trim(),
         synopsis: newSynopsis.trim() || "Sinopsis proyek naskah...",
+        isPrivate: newIsPrivate,
       });
     }
     setNewTitle("");
     setNewSubtitle("");
     setNewSynopsis("");
+    setNewIsPrivate(false);
     setIsNewProjectModalOpen(false);
     setIsProjectDropdownOpen(false);
   };
 
-  const tabs: { id: "editor" | "ideas" | "logs" | "preview" | "ai"; label: string }[] = [
+  const tabs: { id: "editor" | "ideas" | "logs" | "preview" | "ai" | "gallery"; label: string }[] = [
     { id: "editor", label: "Bab & Editor" },
     { id: "ideas", label: "Papan Gagasan" },
     { id: "logs", label: "Log Revisi" },
     { id: "preview", label: "Pratinjau Buku" },
     { id: "ai", label: "Asisten AI" },
+    { id: "gallery", label: "🌐 Galeri Publik" },
   ];
 
   return (
@@ -112,8 +120,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <div className="hidden xl:block h-7 w-px bg-white/20 mx-1" />
 
-            {/* Interactive Project Switcher & Creator Dropdown */}
-            <div className="relative hidden xl:block">
+            {/* Interactive Project Switcher & Settings Button */}
+            <div className="relative hidden xl:flex items-center space-x-1.5">
               <button
                 onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
                 className="flex items-center space-x-2 text-left bg-slate-900/80 hover:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-white/20 transition shadow-inner max-w-xs group"
@@ -122,6 +130,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="truncate">
                   <h1 className="text-xs font-black text-amber-300 truncate flex items-center space-x-1">
                     <span>{project.title}</span>
+                    {project.isPrivate ? (
+                      <span className="text-[9px] bg-red-500/30 text-red-300 border border-red-500/50 px-1.5 py-0.2 rounded font-black shrink-0">Privat</span>
+                    ) : (
+                      <span className="text-[9px] bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 px-1.5 py-0.2 rounded font-black shrink-0">Publik</span>
+                    )}
                   </h1>
                   <p className="text-[10px] font-medium text-slate-200/80 truncate">
                     {project.genre} • {project.subtitle}
@@ -130,11 +143,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <ChevronDown className="w-3.5 h-3.5 text-amber-400 group-hover:translate-y-0.5 transition-transform flex-shrink-0" />
               </button>
 
+              {/* Settings Gear Button for Active Project */}
+              {onUpdateProject && (
+                <button
+                  onClick={() => setIsProjectSettingsOpen(true)}
+                  className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/20 text-amber-400 hover:text-amber-300 transition shadow-sm"
+                  title="Pengaturan Proyek & Privasi Naskah"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              )}
+
               {/* Projects List Dropdown */}
               {isProjectDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsProjectDropdownOpen(false)} />
-                  <div className="absolute left-0 mt-2 w-80 bg-slate-950 border-2 border-amber-500/50 rounded-2xl shadow-2xl p-3 z-50 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200 text-white">
+                  <div className="absolute left-0 top-full mt-2 w-80 bg-slate-950 border-2 border-amber-500/50 rounded-2xl shadow-2xl p-3 z-50 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200 text-white">
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
                       <span className="text-xs font-black text-amber-300 flex items-center space-x-1">
                         <BookOpen className="w-3.5 h-3.5" />
@@ -160,7 +184,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                             }`}
                           >
                             <div className="truncate pr-2">
-                              <div className="font-black truncate">{p.title}</div>
+                              <div className="font-black truncate flex items-center space-x-1">
+                                <span>{p.title}</span>
+                                {p.isPrivate ? (
+                                  <span className="text-[8px] bg-red-500 text-white px-1 rounded font-black">🔒 Privat</span>
+                                ) : (
+                                  <span className="text-[8px] bg-emerald-500 text-slate-950 px-1 rounded font-black">🌐 Publik</span>
+                                )}
+                              </div>
                               <div className={`text-[10px] truncate font-medium ${isSelected ? "text-slate-900" : "text-slate-400"}`}>
                                 {p.genre} • {p.subtitle}
                               </div>
@@ -582,6 +613,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                 />
               </div>
 
+              {/* Status Akses Publik / Privat Toggle */}
+              <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="font-black text-amber-300 text-xs flex items-center space-x-1">
+                    {newIsPrivate ? <Lock className="w-3.5 h-3.5 text-red-400" /> : <Globe className="w-3.5 h-3.5 text-emerald-400" />}
+                    <span>Status Akses Naskah</span>
+                  </span>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {newIsPrivate ? "Privat: Hanya Anda & Co-Author yang diundang." : "Publik: Dapat di-preview publik & Googlebot."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setNewIsPrivate(!newIsPrivate)}
+                  className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 cursor-pointer ${
+                    newIsPrivate ? "bg-red-500" : "bg-emerald-500"
+                  }`}
+                  title="Ubah antara Status Akses Publik dan Privat"
+                >
+                  <div
+                    className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 flex items-center justify-center text-[9px] ${
+                      newIsPrivate ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  >
+                    {newIsPrivate ? "🔒" : "🌐"}
+                  </div>
+                </button>
+              </div>
+
               <div className="flex justify-end space-x-2 pt-2">
                 <button
                   type="button"
@@ -600,6 +661,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             </form>
           </div>
         </div>
+      )}
+      {/* Modal Pengaturan Proyek & Privasi Naskah */}
+      {isProjectSettingsOpen && onUpdateProject && (
+        <ProjectSettingsModal
+          isOpen={isProjectSettingsOpen}
+          onClose={() => setIsProjectSettingsOpen(false)}
+          project={project}
+          onUpdateProject={onUpdateProject}
+          onRunDatabaseBootstrap={onRunDatabaseBootstrap}
+          currentAuthorName={currentAuthor.name}
+        />
       )}
     </header>
   );

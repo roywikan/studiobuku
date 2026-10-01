@@ -5,6 +5,7 @@ import { auth, googleProvider } from "../firebase";
 import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
 
 export interface UserSession {
+  id?: string;
   email: string;
   name: string;
   avatar: string;
@@ -31,6 +32,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const session: UserSession = {
+          id: user.uid || user.email || "user_google",
           email: user.email || "penulis@gmail.com",
           name: user.displayName || user.email?.split("@")[0] || "Penulis Google",
           avatar: user.photoURL || "👨‍💻",
@@ -51,6 +53,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
     }
 
     const session: UserSession = {
+      id: "user_" + username.toLowerCase().replace(/\s+/g, "_"),
       email: `${username.toLowerCase().replace(/\s+/g, ".")}@studiobuku.com`,
       name: username.trim(),
       avatar: "✍️",
@@ -77,6 +80,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
         : emailPrefix ? emailPrefix.replace(/[._]/g, " ") : "Penulis Google";
 
       const session: UserSession = {
+        id: user.uid || rawEmail || "user_google",
         email: rawEmail || "penulis@gmail.com",
         name: cleanName,
         avatar: user.photoURL || "👨‍💻",

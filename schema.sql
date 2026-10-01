@@ -10,7 +10,11 @@ CREATE TABLE IF NOT EXISTS projects (
   subtitle TEXT,
   genre TEXT,
   synopsis TEXT,
-  createdAt TEXT NOT NULL
+  createdAt TEXT NOT NULL,
+  isPrivate INTEGER NOT NULL DEFAULT 0,
+  ownerId TEXT,
+  ownerName TEXT,
+  coAuthors TEXT
 );
 
 -- 2. TABEL BAB & DRAF EDITOR
@@ -78,110 +82,190 @@ CREATE TABLE IF NOT EXISTS annotations (
 );
 
 -- ==========================================================
--- SEED DATA AWAL (INITIAL SAMPLE DATA)
+-- SEED DATA AWAL (12+ PROYEK NASKAH BUKU DENGAN STATUS PUBLIK/PRIVAT)
 -- ==========================================================
 
--- Proyek Awal
-INSERT OR IGNORE INTO projects (id, title, subtitle, genre, synopsis, createdAt)
-VALUES (
+INSERT OR IGNORE INTO projects (id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors)
+VALUES 
+(
   'proj_1',
   'Gema Di Ujung Senja',
   'Novel Fiksi Psikologis & Perjalanan Dua Jiwa',
   'Fiksi / Drama',
   'Kisah tentang dua sahabat masa kecil yang terpisah selama satu dekade dan dipertemukan kembali dalam proyek restorasi arsip tua di Yogyakarta.',
-  DATETIME('now')
+  '2026-09-30T10:00:00.000Z',
+  0,
+  'auth_1',
+  'Rian Hidayat',
+  '["auth_2", "Kirana Maharani"]'
+),
+(
+  'proj_2',
+  'Lembayung Kotabaru',
+  'Misteri Berkas Tua 1965',
+  'Misteri & Detektif',
+  'Detektif swasta dan juru arsip membongkar brankas rahasia peninggalan kolonial Belanda di loteng Kotabaru.',
+  '2026-09-29T14:30:00.000Z',
+  0,
+  'auth_2',
+  'Kirana Maharani',
+  '["auth_1", "Rian Hidayat"]'
+),
+(
+  'proj_3',
+  'Sandi Dibalik Candi',
+  'Perjalanan Arkeologis Di Lembah Progo',
+  'Akademik & Riset',
+  'Catatan lapangan dan hipotesis prasasti batu hitam yang terpendam di lereng bukit Menoreh.',
+  '2026-09-28T09:15:00.000Z',
+  0,
+  'auth_1',
+  'Rian Hidayat',
+  '[]'
+),
+(
+  'proj_4',
+  'Bunga Rumput Samudra',
+  'Antologi Puisi & Narasi Pesisir',
+  'Biografi / Antologi',
+  'Kumpulan prosa dan refleksi filosofis kehidupan nelayan di pesisir selatan Jawa.',
+  '2026-09-27T16:20:00.000Z',
+  0,
+  'auth_2',
+  'Kirana Maharani',
+  '[]'
+),
+(
+  'proj_5',
+  'Pelaut Malam Dan Bintang',
+  'Novel Fiksi Sejarah Bahari',
+  'Fiksi / Novel',
+  'Kisah kapal pinisi nusantara yang menembus badai samudera hindia membawa muatan rempah langka.',
+  '2026-09-26T11:45:00.000Z',
+  0,
+  'auth_1',
+  'Rian Hidayat',
+  '[]'
+),
+(
+  'proj_6',
+  'Cahaya Di Balik Kabut',
+  'Pengembangan Diri & Ketenangan Jiwa',
+  'Non-Fiksi / Pengembangan Diri',
+  'Panduan reflektif menemukan kedamaian batin di tengah hiruk pikuk kehidupan modern.',
+  '2026-09-25T08:00:00.000Z',
+  0,
+  'auth_2',
+  'Kirana Maharani',
+  '[]'
+),
+(
+  'proj_7',
+  'Detektif Batavia 1920',
+  'Penyelidikan Kota Tua',
+  'Misteri & Detektif',
+  'Inspektur muda mengurai teka-teki hilangnya lukisan cat minyak di pelabuhan Sunda Kelapa.',
+  '2026-09-24T13:10:00.000Z',
+  0,
+  'auth_1',
+  'Rian Hidayat',
+  '[]'
+),
+(
+  'proj_8',
+  'Catatan Penjelajah Rimba',
+  'Antologi Eksplorasi Gunung Dan Hutan',
+  'Biografi / Antologi',
+  'Perjalanan menembus kanopi hutan hujan tropis Kalimantan dan kearifan lokal suku pedalaman.',
+  '2026-09-23T15:00:00.000Z',
+  0,
+  'auth_2',
+  'Kirana Maharani',
+  '[]'
+),
+(
+  'proj_9',
+  'Harmoni Di Tepian Progo',
+  'Roman Pedesaan & Alunan Musik Klasik',
+  'Fiksi Remaja / Romance',
+  'Pemain biola muda menemukan inspirasi komposisi lagu baru di tepian sungai berbatu.',
+  '2026-09-22T10:30:00.000Z',
+  0,
+  'auth_1',
+  'Rian Hidayat',
+  '[]'
+),
+(
+  'proj_10',
+  'Surat Surat Senja',
+  'Kumpulan Korespondensi Dua Sahabat',
+  'Biografi / Antologi',
+  'Koleksi surat fisik berisi renungan sastra, seni, dan epistemologi kebudayaan.',
+  '2026-09-21T17:40:00.000Z',
+  0,
+  'auth_2',
+  'Kirana Maharani',
+  '[]'
+),
+(
+  'proj_11',
+  'Seruling Di Puncak Merapi',
+  'Mitos Dan Realitas Lereng Vulkanik',
+  'Fiksi / Novel',
+  'Kisah juru kunci muda yang merawat harmoni alam di bawah naungan awan panas gunung api.',
+  '2026-09-20T12:00:00.000Z',
+  0,
+  'auth_1',
+  'Rian Hidayat',
+  '[]'
+),
+(
+  'proj_12',
+  'Bayang Bayang Malioboro',
+  'Kisah Komunitas Seni Malam Hari',
+  'Fiksi / Novel',
+  'Dinamika kehidupan seniman jalanan, pemusik angklung, dan pelukis sketsa trotoar Yogya.',
+  '2026-09-19T19:25:00.000Z',
+  0,
+  'auth_2',
+  'Kirana Maharani',
+  '[]'
+),
+(
+  'proj_13',
+  'Catatan Rahasia Juru Kunci',
+  'Proyek Khusus Terkunci (Dokumen Internal)',
+  'Fiksi / Drama',
+  'Naskah privat yang masih dalam draf tertutup dan belum dipublikasikan.',
+  '2026-09-18T21:00:00.000Z',
+  1,
+  'auth_1',
+  'Rian Hidayat',
+  '[]'
 );
 
--- Bab Pertama
+-- Sample Chapters
 INSERT OR IGNORE INTO chapters (id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt)
-VALUES (
+VALUES 
+(
   'chap_1',
   'proj_1',
   'Bab 1: Stasiun Tugu Pukul Empat Sore',
   'Pertemuan setelah sepuluh tahun berlalu',
-  'Kereta rel listrik berdecit pelan saat memasuki peron jalur tiga Stasiun Tugu. Aroma uap panas bercampur bau khas stasiun tua menyambut kedatangan sore itu. Langit Yogyakarta tampak jingga kemerahan, menepis mendung yang menggantung sejak siang.
-
-Arya berdiri di dekat pilar besi bercat hijau pudar. Tangannya menggenggam tiket kertas yang sudah agak kusut. Di seberangnya, seorang perempuan berjas hujan abu-abu melangkah turun dari gerbong ekonomi, membawa ransel kanvas lusuh yang sama persis seperti sepuluh tahun lalu.
-
-''Kamu terlambat lima menit, Kiran,'' sapa Arya dengan senyum tipis.
-
-Kirana mendengus pelan, lalu tertawa kecil. ''Kemacetan Ring Road tidak bisa diajak kompromi, Ary. Tapi setidaknya kita tepat waktu untuk memulai semua ini.''',
+  'Kereta rel listrik berdecit pelan saat memasuki peron jalur tiga Stasiun Tugu. Aroma uap panas bercampur bau khas stasiun tua menyambut kedatangan sore itu.',
   1,
   'final',
   'Rian Hidayat',
-  DATETIME('now')
-);
-
--- Bab Kedua
-INSERT OR IGNORE INTO chapters (id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt)
-VALUES (
+  '2026-09-30T10:00:00.000Z'
+),
+(
   'chap_2',
   'proj_1',
   'Bab 2: Arsip yang Terlupakan',
   'Menemukan kotak kayu berdebu di loteng',
-  'Rumah kakek di kawasan Kotabaru menyimpan lorong waktu tersendiri. Debu lembut menari di bawah sorotan cahaya matahari yang menembus genting kaca.
-
-''Di sinilah kakek menyimpan catatan harian tahun 1965,'' ujar Kirana sambil menyeka permukaan kotak kayu jati berukir melati.
-
-Arya mendekat, membawa lampu senter kecil. Bau kertas tua semacam vanili kering dan tinta cina langsung menusuk indra penciuman mereka. Lembar demi lembar catatan itu menyimpan teka-teki keluarga yang selama ini terkubur rapat.',
+  'Rumah kakek di kawasan Kotabaru menyimpan lorong waktu tersendiri. Debu lembut menari di bawah sorotan cahaya matahari yang menembus genting kaca.',
   2,
   'review',
   'Kirana Maharani',
-  DATETIME('now')
-);
-
--- Glosarium Awal
-INSERT OR IGNORE INTO glossary (id, projectId, term, category, definition, aliases, updatedAt)
-VALUES
-(
-  'glos_1',
-  'proj_1',
-  'Arya Perkasa',
-  'Karakter',
-  'Tokoh utama pria, 28 tahun, konservator arsip sejarah lulusan UGM.',
-  'Ary, Arya',
-  DATETIME('now')
-),
-(
-  'glos_2',
-  'proj_1',
-  'Kirana Maharani',
-  'Karakter',
-  'Tokoh utama wanita, jurnalis lepas berjiwa petualang.',
-  'Kiran, Kirana',
-  DATETIME('now')
-),
-(
-  'glos_3',
-  'proj_1',
-  'Rumah Kotabaru',
-  'Lokasi',
-  'Rumah berarsitektur kolonial Belanda peninggalan kakek Arya.',
-  'Rumah Kakek',
-  DATETIME('now')
-);
-
--- Papan Gagasan
-INSERT OR IGNORE INTO ideas (id, projectId, title, content, category, authorId, pinned, createdAt)
-VALUES (
-  'idea_1',
-  'proj_1',
-  'Simbol Kunci Inggris Tua',
-  'Kunci inggris peninggalan ayah Arya jadi metafora rekonsiliasi. Setiap bab bisa disisipkan kutipan tentang memperbaiki mesin yang macet.',
-  'Plot',
-  'auth_1',
-  1,
-  DATETIME('now')
-);
-
--- Log Revisi
-INSERT OR IGNORE INTO logs (id, projectId, chapterId, chapterTitle, authorName, action, timestamp)
-VALUES (
-  'log_1',
-  'proj_1',
-  'chap_1',
-  'Bab 1: Stasiun Tugu Pukul Empat Sore',
-  'Rian Hidayat',
-  'Inisialisasi draf naskah awal dan skema basis data',
-  DATETIME('now')
+  '2026-09-30T11:00:00.000Z'
 );
