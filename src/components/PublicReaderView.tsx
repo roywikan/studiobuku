@@ -83,6 +83,11 @@ function linkifyGlossaryText(text: string, glossary: GlossaryItem[], onTermClick
   return parts;
 }
 
+function cleanChapterContent(content: string = ""): string {
+  if (!content) return "";
+  return content.replace(/\n*--- Catatan Penulis[\s\S]*$/, "").trim();
+}
+
 export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb }) => {
   const [db, setDb] = useState<DB | null>(initialDb || null);
   const [loading, setLoading] = useState<boolean>(!initialDb);
@@ -198,7 +203,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
     : `${project.title}${project.subtitle ? ` (${project.subtitle})` : ''} | Studio Buku`;
 
   const rawDesc = !isFullBook && currentChapter?.content
-    ? currentChapter.content.replace(/[#*`_\[\]]/g, ' ').replace(/\s+/g, ' ').trim()
+    ? cleanChapterContent(currentChapter.content).replace(/[#*`_\[\]]/g, ' ').replace(/\s+/g, ' ').trim()
     : (project.synopsis || "").replace(/\s+/g, ' ').trim();
 
   const metaDescription = (rawDesc.length > 155
@@ -427,7 +432,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
                 {c.subtitle && <p className="text-sm italic opacity-80">{c.subtitle}</p>}
                 
                 <div className="space-y-4">
-                  {(c.content || "").split(/\n\s*\n/).map((para, pIdx) => (
+                  {cleanChapterContent(c.content).split(/\n\s*\n/).map((para, pIdx) => (
                     <p key={pIdx} className="indent-6 leading-loose">
                       {linkifyGlossaryText(para, projGlossary, term => setActiveGlossaryTerm(term))}
                     </p>
@@ -437,7 +442,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
             ))
           ) : (
             <div className="space-y-5">
-              {(currentChapter?.content || "").split(/\n\s*\n/).map((para, pIdx) => (
+              {cleanChapterContent(currentChapter?.content).split(/\n\s*\n/).map((para, pIdx) => (
                 <p key={pIdx} className="indent-6 leading-loose">
                   {linkifyGlossaryText(para, projGlossary, term => setActiveGlossaryTerm(term))}
                 </p>

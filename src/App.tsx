@@ -49,6 +49,11 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "") || "naskah";
 }
 
+function cleanChapterContent(content: string = ""): string {
+  if (!content) return "";
+  return content.replace(/\n*--- Catatan Penulis[\s\S]*$/, "").trim();
+}
+
 function normalizeProject(p: any): Project {
   if (!p) return p;
   let coAuthorsList: string[] = [];
@@ -145,6 +150,13 @@ export default function App() {
 
       if (data && Array.isArray(data.projects)) {
         data.projects = data.projects.map(normalizeProject);
+      }
+
+      if (data && Array.isArray(data.chapters)) {
+        data.chapters = data.chapters.map(c => ({
+          ...c,
+          content: cleanChapterContent(c.content)
+        }));
       }
 
       setDb(data);
