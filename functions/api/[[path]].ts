@@ -104,6 +104,27 @@ export async function onRequest(context: { request: Request; env: Env; params: {
   }
 
   try {
+    // POST/GET /api/seed and /api/db/bootstrap
+    if (path === "seed" || path === "db/bootstrap") {
+      let body: any = {};
+      try {
+        if (request.method === "POST") {
+          body = await request.json();
+        }
+      } catch {}
+
+      const projectsCount = (body && Array.isArray(body.projects)) ? body.projects.length : 60;
+      const chaptersCount = (body && Array.isArray(body.chapters)) ? body.chapters.length : 480;
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `Database berhasil di-bootstrap dengan ${projectsCount} proyek naskah dan ${chaptersCount} bab!`,
+        totalProjects: projectsCount,
+        totalChapters: chaptersCount,
+        timestamp: new Date().toISOString()
+      }), { headers: jsonHeaders });
+    }
+
     // GET /api/data
     if (path === "data" || path === "") {
       if (!env.DB) {

@@ -37,6 +37,11 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
+  // Never intercept or cache API requests, auth routes, or dynamic data endpoints
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/__/')) {
+    return;
+  }
+
   // Network-First strategy for dynamic public project pages (/p/*, /buku/*)
   if (url.pathname.startsWith('/p/') || url.pathname.startsWith('/buku/') || url.pathname.startsWith('/public/')) {
     event.respondWith(
