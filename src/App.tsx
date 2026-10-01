@@ -297,10 +297,11 @@ export default function App() {
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-500/20 flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
+                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-400/30 flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
+                style={{ backgroundColor: "#fbbf24", color: "#020617" }}
               >
                 <LogIn className="w-4 h-4 text-slate-950 stroke-[2.5]" />
-                <span>Masuk Penulis</span>
+                <span>Masuk</span>
               </button>
             </div>
           </div>
