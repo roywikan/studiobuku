@@ -81,6 +81,10 @@ interface Project {
   genre: string;
   synopsis: string;
   createdAt: string;
+  isPrivate?: boolean;
+  ownerId?: string;
+  ownerName?: string;
+  coAuthors?: string[];
 }
 
 interface DB {
@@ -105,7 +109,155 @@ const initialDb: DB = {
       subtitle: "Novel Fiksi Psikologis & Perjalanan Dua Jiwa",
       genre: "Fiksi / Drama",
       synopsis: "Kisah tentang dua sahabat masa kecil yang terpisah selama satu dekade dan dipertemukan kembali dalam proyek restorasi arsip tua di Yogyakarta.",
-      createdAt: new Date().toISOString()
+      createdAt: "2026-09-30T10:00:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: ["auth_2", "Kirana Maharani"]
+    },
+    {
+      id: "proj_2",
+      title: "Lembayung Kotabaru",
+      subtitle: "Misteri Berkas Tua 1965",
+      genre: "Misteri & Detektif",
+      synopsis: "Detektif swasta dan juru arsip membongkar brankas rahasia peninggalan kolonial Belanda di loteng Kotabaru.",
+      createdAt: "2026-09-29T14:30:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_2",
+      ownerName: "Kirana Maharani",
+      coAuthors: ["auth_1", "Rian Hidayat"]
+    },
+    {
+      id: "proj_3",
+      title: "Sandi Dibalik Candi",
+      subtitle: "Perjalanan Arkeologis Di Lembah Progo",
+      genre: "Akademik & Riset",
+      synopsis: "Catatan lapangan dan hipotesis prasasti batu hitam yang terpendam di lereng bukit Menoreh.",
+      createdAt: "2026-09-28T09:15:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: []
+    },
+    {
+      id: "proj_4",
+      title: "Bunga Rumput Samudra",
+      subtitle: "Antologi Puisi & Narasi Pesisir",
+      genre: "Biografi / Antologi",
+      synopsis: "Kumpulan prosa dan refleksi filosofis kehidupan nelayan di pesisir selatan Jawa.",
+      createdAt: "2026-09-27T16:20:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_2",
+      ownerName: "Kirana Maharani",
+      coAuthors: []
+    },
+    {
+      id: "proj_5",
+      title: "Pelaut Malam Dan Bintang",
+      subtitle: "Novel Fiksi Sejarah Bahari",
+      genre: "Fiksi / Novel",
+      synopsis: "Kisah kapal pinisi nusantara yang menembus badai samudera hindia membawa muatan rempah langka.",
+      createdAt: "2026-09-26T11:45:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: []
+    },
+    {
+      id: "proj_6",
+      title: "Cahaya Di Balik Kabut",
+      subtitle: "Pengembangan Diri & Ketenangan Jiwa",
+      genre: "Non-Fiksi / Pengembangan Diri",
+      synopsis: "Panduan reflektif menemukan kedamaian batin di tengah hiruk pikuk kehidupan modern.",
+      createdAt: "2026-09-25T08:00:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_2",
+      ownerName: "Kirana Maharani",
+      coAuthors: []
+    },
+    {
+      id: "proj_7",
+      title: "Detektif Batavia 1920",
+      subtitle: "Penyelidikan Kota Tua",
+      genre: "Misteri & Detektif",
+      synopsis: "Inspektur muda mengurai teka-teki hilangnya lukisan cat minyak di pelabuhan Sunda Kelapa.",
+      createdAt: "2026-09-24T13:10:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: []
+    },
+    {
+      id: "proj_8",
+      title: "Catatan Penjelajah Rimba",
+      subtitle: "Antologi Eksplorasi Gunung Dan Hutan",
+      genre: "Biografi / Antologi",
+      synopsis: "Perjalanan menembus kanopi hutan hujan tropis Kalimantan dan kearifan lokal suku pedalaman.",
+      createdAt: "2026-09-23T15:00:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_2",
+      ownerName: "Kirana Maharani",
+      coAuthors: []
+    },
+    {
+      id: "proj_9",
+      title: "Harmoni Di Tepian Progo",
+      subtitle: "Roman Pedesaan & Alunan Musik Klasik",
+      genre: "Fiksi Remaja / Romance",
+      synopsis: "Pemain biola muda menemukan inspirasi komposisi lagu baru di tepian sungai berbatu.",
+      createdAt: "2026-09-22T10:30:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: []
+    },
+    {
+      id: "proj_10",
+      title: "Surat Surat Senja",
+      subtitle: "Kumpulan Korespondensi Dua Sahabat",
+      genre: "Biografi / Antologi",
+      synopsis: "Koleksi surat fisik berisi renungan sastra, seni, dan epistemologi kebudayaan.",
+      createdAt: "2026-09-21T17:40:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_2",
+      ownerName: "Kirana Maharani",
+      coAuthors: []
+    },
+    {
+      id: "proj_11",
+      title: "Seruling Di Puncak Merapi",
+      subtitle: "Mitos Dan Realitas Lereng Vulkanik",
+      genre: "Fiksi / Novel",
+      synopsis: "Kisah juru kunci muda yang merawat harmoni alam di bawah naungan awan panas gunung api.",
+      createdAt: "2026-09-20T12:00:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: []
+    },
+    {
+      id: "proj_12",
+      title: "Bayang Bayang Malioboro",
+      subtitle: "Kisah Komunitas Seni Malam Hari",
+      genre: "Fiksi / Novel",
+      synopsis: "Dinamika kehidupan seniman jalanan, pemusik angklung, dan pelukis sketsa trotoar Yogya.",
+      createdAt: "2026-09-19T19:25:00.000Z",
+      isPrivate: false,
+      ownerId: "auth_2",
+      ownerName: "Kirana Maharani",
+      coAuthors: []
+    },
+    {
+      id: "proj_13",
+      title: "Catatan Rahasia Juru Kunci",
+      subtitle: "Proyek Khusus Terkunci (Dokumen Internal)",
+      genre: "Fiksi / Drama",
+      synopsis: "Naskah privat yang masih dalam draf tertutup dan belum dipublikasikan.",
+      createdAt: "2026-09-18T21:00:00.000Z",
+      isPrivate: true,
+      ownerId: "auth_1",
+      ownerName: "Rian Hidayat",
+      coAuthors: []
     }
   ],
   chapters: [
@@ -223,6 +375,18 @@ function readDb(): DB {
       const data = fs.readFileSync(DB_FILE, "utf-8");
       const parsed = JSON.parse(data);
       if (!parsed.glossary) parsed.glossary = initialDb.glossary;
+
+      // Migrate / Normalize schema for isPrivate, ownerId, ownerName, coAuthors
+      if (parsed.projects && Array.isArray(parsed.projects)) {
+        parsed.projects = parsed.projects.map((p: any) => ({
+          ...p,
+          isPrivate: typeof p.isPrivate === "boolean" ? p.isPrivate : false,
+          ownerId: p.ownerId || "auth_1",
+          ownerName: p.ownerName || "Rian Hidayat",
+          coAuthors: Array.isArray(p.coAuthors) ? p.coAuthors : ["auth_2", "Kirana Maharani"]
+        }));
+      }
+
       return parsed;
     }
   } catch (e) {
@@ -289,7 +453,7 @@ async function startServer() {
       writeDb(initialDb);
       res.json({
         success: true,
-        message: "Database Studio Buku berhasil dibootstrap dengan skema awal dan data seed default.",
+        message: "Database Studio Buku D1 berhasil dibootstrap dengan skema tabel terbaru (isPrivate, ownerId, coAuthors) dan data seed 12+ karya naskah publik.",
         db: initialDb
       });
     } catch (err: any) {
@@ -297,17 +461,45 @@ async function startServer() {
     }
   });
 
+  // Public Projects API with Pagination
+  app.get("/api/public/projects", (req, res) => {
+    const db = readDb();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 12;
+
+    const publicProjs = (db.projects || [])
+      .filter(p => !p.isPrivate)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const total = publicProjs.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const startIndex = (page - 1) * limit;
+    const paginated = publicProjs.slice(startIndex, startIndex + limit);
+
+    res.json({
+      projects: paginated,
+      total,
+      page,
+      limit,
+      totalPages
+    });
+  });
+
   // Projects CRUD
   app.post("/api/projects", (req, res) => {
     const db = readDb();
-    const { title, subtitle, genre, synopsis } = req.body;
+    const { title, subtitle, genre, synopsis, isPrivate, ownerId, ownerName, coAuthors } = req.body;
     const newProject: Project = {
       id: "proj_" + Date.now(),
       title: title || "Proyek Buku Baru",
       subtitle: subtitle || "Naskah Fiksi / Non-Fiksi Studio",
       genre: genre || "Fiksi",
       synopsis: synopsis || "Sinopsis naskah cerita...",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isPrivate: !!isPrivate,
+      ownerId: ownerId || req.body.authorId || "auth_1",
+      ownerName: ownerName || req.body.authorName || "Penulis Studio",
+      coAuthors: Array.isArray(coAuthors) ? coAuthors : []
     };
     db.projects.push(newProject);
 
@@ -319,7 +511,7 @@ async function startServer() {
       content: "Tulis isi naskah bab pertama Anda di sini...",
       order: 1,
       status: "draft",
-      lastEditedBy: req.body.authorName || "Penulis Studio",
+      lastEditedBy: ownerName || req.body.authorName || "Penulis Studio",
       updatedAt: new Date().toISOString()
     };
     db.chapters.push(firstChap);
@@ -333,7 +525,11 @@ async function startServer() {
     const projIndex = db.projects.findIndex(p => p.id === req.params.id);
     if (projIndex === -1) return res.status(404).json({ error: "Project not found" });
 
-    db.projects[projIndex] = { ...db.projects[projIndex], ...req.body };
+    db.projects[projIndex] = {
+      ...db.projects[projIndex],
+      ...req.body,
+      isPrivate: typeof req.body.isPrivate === "boolean" ? req.body.isPrivate : db.projects[projIndex].isPrivate
+    };
     writeDb(db);
     res.json(db.projects[projIndex]);
   });
@@ -605,6 +801,36 @@ async function startServer() {
     const project = db.projects.find(p => p.id === projectSlugInput || slugify(p.title) === cleanProjSlug) || db.projects[0];
     if (!project) {
       return `<!DOCTYPE html><html lang="id"><head><title>Proyek Tidak Ditemukan - Studio Buku</title></head><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;text-align:center;padding:50px;"><h1>404 - Proyek Naskah Tidak Ditemukan</h1><p><a href="https://studio.buku.biz.id" style="color:#fbbf24;">Kembali ke Studio Buku</a></p></body></html>`;
+    }
+
+    if (project.isPrivate) {
+      return `
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Akses Terbatas (Naskah Privat) - Studio Buku</title>
+          <style>
+            body { background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+            .card { background: #1e293b; border: 2px solid #f59e0b; border-radius: 24px; max-width: 480px; width: 100%; padding: 40px 30px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+            .icon { font-size: 3.5rem; margin-bottom: 12px; }
+            h1 { color: #fbbf24; font-size: 1.5rem; font-weight: 900; margin: 0 0 10px 0; }
+            p { color: #cbd5e1; font-size: 0.92rem; line-height: 1.6; margin: 0 0 24px 0; }
+            a { display: inline-block; background: #fbbf24; color: #0f172a; text-decoration: none; padding: 10px 26px; border-radius: 99px; font-weight: 900; font-size: 0.85rem; }
+            a:hover { background: #f59e0b; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="icon">🔒</div>
+            <h1>Naskah Ini Bersifat Privat</h1>
+            <p>Penulis inisiator telah mengeset naskah <strong>"${escapeHtml(project.title)}"</strong> sebagai karya privat. Pratinjau publik tidak dapat diakses.</p>
+            <a href="https://studio.buku.biz.id">Kembali ke Studio Buku</a>
+          </div>
+        </body>
+        </html>
+      `;
     }
 
     const projChapters = db.chapters.filter(c => c.projectId === project.id).sort((a,b) => a.order - b.order);
@@ -1229,7 +1455,7 @@ async function startServer() {
       }
 
       let responseText = "";
-      const modelsToTry = ["gemini-flash-latest", "gemini-3.1-flash-lite", "gemini-3.8-flash"];
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       let lastError = null;
 
       for (const m of modelsToTry) {

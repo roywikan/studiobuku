@@ -68,6 +68,10 @@ export interface Project {
   genre: string;
   synopsis: string;
   createdAt: string;
+  isPrivate?: boolean;
+  ownerId?: string;
+  ownerName?: string;
+  coAuthors?: string[];
 }
 
 export interface DB {
