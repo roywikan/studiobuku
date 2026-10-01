@@ -1495,8 +1495,8 @@ async function startServer() {
               <span>Studio Buku</span>
             </a>
             <div class="flex items-center space-x-3">
-              <button class="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-500/20">
-                Masuk Penulis
+              <button class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-400/30" style="background-color: #fbbf24; color: #020617;">
+                Masuk
               </button>
             </div>
           </div>
@@ -1506,19 +1506,13 @@ async function startServer() {
         <main class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
           <!-- CARDS BENTO GRID WITH INTEGRATED HERO CARD & DENSE AUTO-PACKING -->
           <section class="space-y-6">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Naskah Terbaru :
-              </h2>
-            </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 grid-flow-dense auto-rows-fr">
               ${validPage === 1 ? `
                 <!-- INTEGRATED FEATURED HERO CARD (CARD #0) ON PAGE 1 -->
                 <div class="md:col-span-2 lg:col-span-2 bg-gradient-to-r from-[#3b0854] via-[#2d0542] to-[#1e022b] border border-purple-500/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-4 shadow-2xl relative overflow-hidden">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="bg-pink-600/30 border border-pink-400/40 text-pink-200 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center space-x-1.5">
-                      <span>PROGRAM PENULISAN & CO-AUTHORSHIP</span>
+                      <span>ALAT BANTU PENULISAN & CO-AUTHORSHIP</span>
                     </span>
                     <span class="bg-amber-400/20 border border-amber-400/40 text-amber-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                       ${totalProjects} NASKAH TERPUBLIKASI
@@ -1527,7 +1521,7 @@ async function startServer() {
 
                   <div class="space-y-2">
                     <h1 class="text-xl sm:text-3xl font-black text-white tracking-tight leading-tight">
-                      Katalog Naskah, Ruang Kerja Penulis & Galeri Karya Terbuka
+                      Alat Kerja Penulis Individual dan Kolaboratif
                     </h1>
                     <p class="text-purple-200/90 text-xs sm:text-sm leading-relaxed font-medium">
                       Selamat datang di Studio Buku — wadah penulisan dan penerbitan naskah kolaboratif.
@@ -1536,7 +1530,7 @@ async function startServer() {
 
                   <div class="pt-3 border-t border-purple-500/20 flex items-center justify-between text-xs text-purple-300 font-bold">
                     <span>Co-Authorship Penulisan Buku</span>
-                    <span class="text-amber-400 font-black">Studio Buku • 2026</span>
+                    <span class="text-amber-400 font-black">100% Free</span>
                   </div>
                 </div>
               ` : ''}

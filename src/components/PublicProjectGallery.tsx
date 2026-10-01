@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Project, Chapter } from "../types";
-import { Search, Globe, ChevronLeft, ChevronRight, BookOpen, User, Calendar, Sparkles, ArrowUpRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 
 interface PublicProjectGalleryProps {
   projects: Project[];
@@ -215,32 +215,8 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
         {nextUrl && <link rel="next" href={nextUrl} />}
       </Helmet>
       
-      {/* GALLERY HEADER & FILTER BAR - BENTO ROYAL PURPLE */}
-      <div className="bg-[#290542] border border-purple-600/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-purple-800/50 pb-4">
-          <div>
-            <div className="flex items-center space-x-2 text-amber-300 font-bold text-xs tracking-wide uppercase mb-1">
-              <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>KATALOG NASKAH & KARYA TERPUBLIKASI</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
-              <span>Naskah Terbaru :</span>
-            </h2>
-            <div className="flex items-center space-x-2 text-xs text-purple-200/80 font-medium mt-1">
-              <span>{totalItems} Naskah Terpublikasi</span>
-              <span aria-hidden="true">·</span>
-              <span>12 Naskah per Halaman</span>
-              <span aria-hidden="true">·</span>
-              <span>Halaman {validPage} dari {totalPages}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 bg-pink-600/20 px-4 py-2 rounded-2xl border border-pink-500/30 text-xs text-pink-200 font-bold shrink-0">
-            <Sparkles className="w-4 h-4 text-pink-400 shrink-0" />
-            <span>Platform Penulisan & Co-Authorship</span>
-          </div>
-        </div>
-
+      {/* GALLERY SEARCH & FILTER BAR - BENTO ROYAL PURPLE */}
+      <div className="bg-[#290542] border border-purple-600/40 rounded-3xl p-4 sm:p-5 shadow-2xl">
         {/* SEARCH & GENRE FILTER */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
@@ -297,7 +273,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="bg-pink-600/30 border border-pink-400/40 text-pink-200 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center space-x-1.5">
                   <BookOpen className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                  <span>PROGRAM PENULISAN & CO-AUTHORSHIP</span>
+                  <span>ALAT BANTU PENULISAN & CO-AUTHORSHIP</span>
                 </span>
                 <span className="bg-amber-400/20 border border-amber-400/40 text-amber-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                   {totalItems} NASKAH TERPUBLIKASI
@@ -306,7 +282,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
 
               <div className="space-y-2">
                 <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight leading-tight">
-                  Katalog Naskah, Ruang Kerja Penulis & Galeri Karya Terbuka
+                  Alat Kerja Penulis Individual dan Kolaboratif
                 </h1>
                 <p className="text-purple-200/90 text-xs sm:text-sm leading-relaxed font-medium">
                   Selamat datang di Studio Buku — wadah penulisan dan penerbitan naskah kolaboratif. Bebas dibaca oleh publik dan terindeks penuh oleh Googlebot.
@@ -315,7 +291,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
 
               <div className="pt-3 border-t border-purple-500/20 flex items-center justify-between text-xs text-purple-300 font-bold">
                 <span>Co-Authorship Penulisan Buku</span>
-                <span className="text-amber-400 font-black">Studio Buku • 2026</span>
+                <span className="text-amber-400 font-black">100% Free</span>
               </div>
             </div>
           )}

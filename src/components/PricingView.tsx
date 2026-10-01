@@ -39,10 +39,11 @@ export const PricingView: React.FC<PricingViewProps> = ({ onBack, onOpenLogin })
 
             <button
               onClick={onOpenLogin}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-400/30 flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
+              style={{ backgroundColor: "#fbbf24", color: "#020617" }}
             >
               <LogIn className="w-4 h-4 text-slate-950 stroke-[2.5]" />
-              <span>Login</span>
+              <span>Masuk</span>
             </button>
           </div>
         </div>
