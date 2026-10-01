@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
+import { INITIAL_SEED_DB, slugify as seedSlugify } from "./src/seedData";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
@@ -97,278 +98,7 @@ interface DB {
   glossary?: GlossaryTerm[];
 }
 
-const initialDb: DB = {
-  authors: [
-    { id: "auth_1", name: "Rian Hidayat", role: "Penulis Utama", avatar: "👨‍💻", color: "bg-emerald-500" },
-    { id: "auth_2", name: "Kirana Maharani", role: "Penulis Studio", avatar: "👩‍🎨", color: "bg-indigo-500" }
-  ],
-  projects: [
-    {
-      id: "proj_1",
-      title: "Gema Di Ujung Senja",
-      subtitle: "Novel Fiksi Psikologis & Perjalanan Dua Jiwa",
-      genre: "Fiksi / Drama",
-      synopsis: "Kisah tentang dua sahabat masa kecil yang terpisah selama satu dekade dan dipertemukan kembali dalam proyek restorasi arsip tua di Yogyakarta.",
-      createdAt: "2026-09-30T10:00:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: ["auth_2", "Kirana Maharani"]
-    },
-    {
-      id: "proj_2",
-      title: "Lembayung Kotabaru",
-      subtitle: "Misteri Berkas Tua 1965",
-      genre: "Misteri & Detektif",
-      synopsis: "Detektif swasta dan juru arsip membongkar brankas rahasia peninggalan kolonial Belanda di loteng Kotabaru.",
-      createdAt: "2026-09-29T14:30:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_2",
-      ownerName: "Kirana Maharani",
-      coAuthors: ["auth_1", "Rian Hidayat"]
-    },
-    {
-      id: "proj_3",
-      title: "Sandi Dibalik Candi",
-      subtitle: "Perjalanan Arkeologis Di Lembah Progo",
-      genre: "Akademik & Riset",
-      synopsis: "Catatan lapangan dan hipotesis prasasti batu hitam yang terpendam di lereng bukit Menoreh.",
-      createdAt: "2026-09-28T09:15:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: []
-    },
-    {
-      id: "proj_4",
-      title: "Bunga Rumput Samudra",
-      subtitle: "Antologi Puisi & Narasi Pesisir",
-      genre: "Biografi / Antologi",
-      synopsis: "Kumpulan prosa dan refleksi filosofis kehidupan nelayan di pesisir selatan Jawa.",
-      createdAt: "2026-09-27T16:20:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_2",
-      ownerName: "Kirana Maharani",
-      coAuthors: []
-    },
-    {
-      id: "proj_5",
-      title: "Pelaut Malam Dan Bintang",
-      subtitle: "Novel Fiksi Sejarah Bahari",
-      genre: "Fiksi / Novel",
-      synopsis: "Kisah kapal pinisi nusantara yang menembus badai samudera hindia membawa muatan rempah langka.",
-      createdAt: "2026-09-26T11:45:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: []
-    },
-    {
-      id: "proj_6",
-      title: "Cahaya Di Balik Kabut",
-      subtitle: "Pengembangan Diri & Ketenangan Jiwa",
-      genre: "Non-Fiksi / Pengembangan Diri",
-      synopsis: "Panduan reflektif menemukan kedamaian batin di tengah hiruk pikuk kehidupan modern.",
-      createdAt: "2026-09-25T08:00:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_2",
-      ownerName: "Kirana Maharani",
-      coAuthors: []
-    },
-    {
-      id: "proj_7",
-      title: "Detektif Batavia 1920",
-      subtitle: "Penyelidikan Kota Tua",
-      genre: "Misteri & Detektif",
-      synopsis: "Inspektur muda mengurai teka-teki hilangnya lukisan cat minyak di pelabuhan Sunda Kelapa.",
-      createdAt: "2026-09-24T13:10:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: []
-    },
-    {
-      id: "proj_8",
-      title: "Catatan Penjelajah Rimba",
-      subtitle: "Antologi Eksplorasi Gunung Dan Hutan",
-      genre: "Biografi / Antologi",
-      synopsis: "Perjalanan menembus kanopi hutan hujan tropis Kalimantan dan kearifan lokal suku pedalaman.",
-      createdAt: "2026-09-23T15:00:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_2",
-      ownerName: "Kirana Maharani",
-      coAuthors: []
-    },
-    {
-      id: "proj_9",
-      title: "Harmoni Di Tepian Progo",
-      subtitle: "Roman Pedesaan & Alunan Musik Klasik",
-      genre: "Fiksi Remaja / Romance",
-      synopsis: "Pemain biola muda menemukan inspirasi komposisi lagu baru di tepian sungai berbatu.",
-      createdAt: "2026-09-22T10:30:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: []
-    },
-    {
-      id: "proj_10",
-      title: "Surat Surat Senja",
-      subtitle: "Kumpulan Korespondensi Dua Sahabat",
-      genre: "Biografi / Antologi",
-      synopsis: "Koleksi surat fisik berisi renungan sastra, seni, dan epistemologi kebudayaan.",
-      createdAt: "2026-09-21T17:40:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_2",
-      ownerName: "Kirana Maharani",
-      coAuthors: []
-    },
-    {
-      id: "proj_11",
-      title: "Seruling Di Puncak Merapi",
-      subtitle: "Mitos Dan Realitas Lereng Vulkanik",
-      genre: "Fiksi / Novel",
-      synopsis: "Kisah juru kunci muda yang merawat harmoni alam di bawah naungan awan panas gunung api.",
-      createdAt: "2026-09-20T12:00:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: []
-    },
-    {
-      id: "proj_12",
-      title: "Bayang Bayang Malioboro",
-      subtitle: "Kisah Komunitas Seni Malam Hari",
-      genre: "Fiksi / Novel",
-      synopsis: "Dinamika kehidupan seniman jalanan, pemusik angklung, dan pelukis sketsa trotoar Yogya.",
-      createdAt: "2026-09-19T19:25:00.000Z",
-      isPrivate: false,
-      ownerId: "auth_2",
-      ownerName: "Kirana Maharani",
-      coAuthors: []
-    },
-    {
-      id: "proj_13",
-      title: "Catatan Rahasia Juru Kunci",
-      subtitle: "Proyek Khusus Terkunci (Dokumen Internal)",
-      genre: "Fiksi / Drama",
-      synopsis: "Naskah privat yang masih dalam draf tertutup dan belum dipublikasikan.",
-      createdAt: "2026-09-18T21:00:00.000Z",
-      isPrivate: true,
-      ownerId: "auth_1",
-      ownerName: "Rian Hidayat",
-      coAuthors: []
-    }
-  ],
-  chapters: [
-    {
-      id: "chap_1",
-      projectId: "proj_1",
-      title: "Bab 1: Stasiun Tugu Pukul Empat Sore",
-      subtitle: "Pertemuan setelah sepuluh tahun berlalu",
-      content: "Kereta rel listrik berdecit pelan saat memasuki peron jalur tiga Stasiun Tugu. Aroma uap panas bercampur bau khas stasiun tua menyambut kedatangan sore itu. Langit Yogyakarta tampak jingga kemerahan, menepis mendung yang menggantung sejak siang.\n\nArya berdiri di dekat pilar besi bercat hijau pudar. Tangannya menggenggam tiket kertas yang sudah agak kusut. Di seberangnya, seorang perempuan berjas hujan abu-abu melangkah turun dari gerbong ekonomi, membawa ransel kanvas lusuh yang sama persis seperti sepuluh tahun lalu.\n\n'Kamu terlambat lima menit, Kiran,' sapa Arya dengan senyum tipis.\n\nKirana mendengus pelan, lalu tertawa kecil. 'Kemacetan Ring Road tidak bisa diajak kompromi, Ary. Tapi setidaknya kita tepat waktu untuk memulai semua ini.'",
-      order: 1,
-      status: "final",
-      lastEditedBy: "Rian Hidayat",
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "chap_2",
-      projectId: "proj_1",
-      title: "Bab 2: Arsip yang Terlupakan",
-      subtitle: "Menemukan kotak kayu berdebu di loteng",
-      content: "Rumah kakek di kawasan Kotabaru menyimpan lorong waktu tersendiri. Debu lembut menari di bawah sorotan cahaya matahari yang menembus genting kaca.\n\n'Di sinilah kakek menyimpan catatan harian tahun 1965,' ujar Kirana sambil menyeka permukaan kotak kayu jati berukir melati.\n\nArya mendekat, membawa lampu senter kecil. Bau kertas tua semacam vanili kering dan tinta cina langsung menusuk indra penciuman mereka. Lembar demi lembar catatan itu menyimpan teka-teki keluarga yang selama ini terkubur rapat.",
-      order: 2,
-      status: "review",
-      lastEditedBy: "Kirana Maharani",
-      updatedAt: new Date().toISOString()
-    }
-  ],
-  ideas: [
-    {
-      id: "idea_1",
-      projectId: "proj_1",
-      title: "Simbol Kunci Inggris Tua",
-      content: "Kunci inggris peninggalan ayah Arya jadi metafora rekonsiliasi. Setiap bab bisa disisipkan kutipan tentang memperbaiki mesin yang macet.",
-      category: "Plot",
-      authorId: "auth_1",
-      pinned: true,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "idea_2",
-      projectId: "proj_1",
-      title: "Latar Suasana Malam Malioboro",
-      content: "Tambahkan deskripsi aroma wedang ronde dan suara angklung jalanan saat mereka berdua menyusuri trotoar malam.",
-      category: "Karakter",
-      authorId: "auth_2",
-      pinned: false,
-      createdAt: new Date().toISOString()
-    }
-  ],
-  logs: [
-    {
-      id: "log_1",
-      projectId: "proj_1",
-      chapterId: "chap_1",
-      chapterTitle: "Bab 1: Stasiun Tugu Pukul Empat Sore",
-      authorName: "Rian Hidayat",
-      action: "Membuat bab baru dan menulis draf awal",
-      timestamp: new Date(Date.now() - 3600000 * 2).toISOString()
-    },
-    {
-      id: "log_2",
-      projectId: "proj_1",
-      chapterId: "chap_2",
-      chapterTitle: "Bab 2: Arsip yang Terlupakan",
-      authorName: "Kirana Maharani",
-      action: "Merevisi bagian deskripsi aroma kertas tua",
-      timestamp: new Date(Date.now() - 1800000).toISOString()
-    }
-  ],
-  annotations: [
-    {
-      id: "ann_1",
-      projectId: "proj_1",
-      chapterId: "chap_1",
-      chapterTitle: "Bab 1: Stasiun Tugu Pukul Empat Sore",
-      text: "Perkuat kesan emosional saat Arya melihat Kirana turun dari kereta.",
-      authorName: "Kirana Maharani",
-      createdAt: new Date().toISOString(),
-      resolved: false
-    }
-  ],
-  glossary: [
-    {
-      id: "glos_1",
-      projectId: "proj_1",
-      term: "Arya Perkasa",
-      category: "Karakter",
-      definition: "Tokoh utama pria, 28 tahun, konservator arsip sejarah lulusan UGM.",
-      aliases: "Ary, Arya",
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "glos_2",
-      projectId: "proj_1",
-      term: "Kirana Maharani",
-      category: "Karakter",
-      definition: "Tokoh utama wanita, jurnalis lepas berjiwa petualang.",
-      aliases: "Kiran, Kirana",
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "glos_3",
-      projectId: "proj_1",
-      term: "Rumah Kotabaru",
-      category: "Lokasi",
-      definition: "Rumah berarsitektur kolonial Belanda peninggalan kakek Arya.",
-      aliases: "Rumah Kakek",
-      updatedAt: new Date().toISOString()
-    }
-  ]
-};
-
+const initialDb: DB = INITIAL_SEED_DB;
 function readDb(): DB {
   try {
     if (fs.existsSync(DB_FILE)) {
@@ -725,7 +455,26 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Import Text / Google Docs / Txt format
+  // Automated DB Bootstrap Endpoint for D1 & Local Memory DB
+  app.post("/api/db/bootstrap", (req, res) => {
+    writeDb(INITIAL_SEED_DB);
+    res.json({
+      success: true,
+      message: "Database D1 & Local berhasil di-bootstrap dengan 60 proyek naskah publik.",
+      projectsCount: INITIAL_SEED_DB.projects.length,
+      chaptersCount: INITIAL_SEED_DB.chapters.length
+    });
+  });
+
+  app.get("/api/db/bootstrap", (req, res) => {
+    writeDb(INITIAL_SEED_DB);
+    res.json({
+      success: true,
+      message: "Database D1 & Local berhasil di-bootstrap dengan 60 proyek naskah publik.",
+      projectsCount: INITIAL_SEED_DB.projects.length,
+      chaptersCount: INITIAL_SEED_DB.chapters.length
+    });
+  });
   app.post("/api/import", (req, res) => {
     const db = readDb();
     const { projectId, text, authorName, splitBy } = req.body;
@@ -1264,7 +1013,7 @@ async function startServer() {
 
             <!-- Footer -->
             <div class="footer">
-              <strong style="color:var(--accent);">Hak cipta milik : Roy.Wikan@gmail.com, Nulis Buku Bareng di <a href="https://Studio.Buku.Biz.ID" target="_blank" style="color:var(--accent); text-decoration:underline;">https://Studio.Buku.Biz.ID</a></strong><br/>
+              <strong style="color:var(--accent);">Hak cipta milik : masing masing user penulisnya, Nulis Buku Bareng di <a href="https://Studio.Buku.Biz.ID" target="_blank" style="color:var(--accent); text-decoration:underline;">https://Studio.Buku.Biz.ID</a></strong><br/>
               Seluruh hak cipta dilindungi undang-undang.
             </div>
           </div>
@@ -1366,6 +1115,222 @@ async function startServer() {
       </html>
     `;
   }
+
+  function renderFrontpageServerHtml(db: DB): string {
+    const publicProjects = (db.projects || []).filter(p => !p.isPrivate);
+
+    const jsonLdItems = publicProjects.map((p, index) => {
+      const projSlug = slugify(p.title);
+      const pChapters = (db.chapters || []).filter(c => c.projectId === p.id);
+      const wordCount = pChapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).length : 0), 0);
+
+      return {
+        "@type": "ListItem",
+        "position": index + 1,
+        "item": {
+          "@type": "Book",
+          "@id": `https://studio.buku.biz.id/p/${projSlug}`,
+          "name": p.title,
+          "alternateName": p.subtitle || "",
+          "genre": p.genre || "Fiksi / Non-Fiksi",
+          "description": p.synopsis || "Naskah terpublikasi di Studio Buku.",
+          "url": `https://studio.buku.biz.id/p/${projSlug}`,
+          "author": {
+            "@type": "Person",
+            "name": p.ownerName || "Penulis Studio Buku"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Studio Buku",
+            "url": "https://studio.buku.biz.id"
+          },
+          "numberOfPages": pChapters.length,
+          "wordCount": wordCount,
+          "inLanguage": "id-ID"
+        }
+      };
+    });
+
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Studio Buku - Galeri Naskah & Karya Kolaboratif",
+      "description": "Platform penulisan & penerbitan naskah kolaboratif. Akses galeri naskah publik, novel, dan jurnal akademis karya penulis Indonesia secara gratis.",
+      "url": "https://studio.buku.biz.id",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Studio Buku",
+        "url": "https://studio.buku.biz.id",
+        "logo": "https://studio.buku.biz.id/studio-buku-logo.jpg"
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "numberOfItems": publicProjects.length,
+        "itemListElement": jsonLdItems
+      }
+    };
+
+    const projectCardsHtml = publicProjects.map(p => {
+      const projSlug = slugify(p.title);
+      const pChapters = (db.chapters || []).filter(c => c.projectId === p.id);
+      const totalWords = pChapters.reduce((sum, c) => sum + (c.content ? c.content.split(/\s+/).length : 0), 0);
+      const authorName = p.ownerName || "Penulis Studio";
+
+      return `
+        <article class="bg-white border border-slate-200 hover:border-amber-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between" id="card-${p.id}">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+                ${escapeHtml(p.genre || "Fiksi")}
+              </span>
+              <span class="text-[11px] text-slate-500 font-semibold flex items-center space-x-1">
+                <span>✍️ ${escapeHtml(authorName)}</span>
+              </span>
+            </div>
+
+            <h2 class="text-lg font-bold text-slate-900 hover:text-amber-600 transition leading-snug">
+              <a href="/p/${projSlug}">${escapeHtml(p.title)}</a>
+            </h2>
+
+            ${p.subtitle ? `<p class="text-xs text-slate-500 font-serif italic">${escapeHtml(p.subtitle)}</p>` : ''}
+
+            <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
+              ${escapeHtml(p.synopsis)}
+            </p>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 space-y-3">
+            <div class="flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+              <span>📖 ${pChapters.length} Bab Terbit</span>
+              <span>📝 ${totalWords.toLocaleString('id-ID')} Kata</span>
+            </div>
+
+            <a href="/p/${projSlug}" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow-sm text-center text-decoration-none">
+              <span>📖 Baca Naskah Lengkap</span>
+            </a>
+          </div>
+        </article>
+      `;
+    }).join("\n");
+
+    return `<!doctype html>
+<html lang="id">
+  <head>
+    <script>window.__DEFINES__ = window.__DEFINES__ || {};</script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Studio Buku – Galeri Naskah & Karya Kolaboratif</title>
+    <meta name="description" content="Studio Buku (studio.buku.biz.id): Platform penulisan dan penerbitan naskah kolaboratif. Jelajahi puluhan naskah novel, jurnal akademis, dan fiksi/non-fiksi karya penulis Indonesia." />
+    
+    <!-- OpenGraph Tags -->
+    <meta property="og:title" content="Studio Buku – Galeri Naskah & Karya Kolaboratif" />
+    <meta property="og:description" content="Jelajahi puluhan naskah novel, jurnal akademis, dan karya fiksi/non-fiksi terpublikasi karya para penulis di Studio Buku." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://studio.buku.biz.id" />
+    <meta property="og:site_name" content="Studio Buku" />
+    <meta property="og:image" content="https://studio.buku.biz.id/studio-buku-logo.jpg" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Studio Buku – Galeri Naskah & Karya Kolaboratif" />
+    <meta name="twitter:description" content="Platform penulisan naskah kolaboratif. Dapatkan akses ke galeri naskah publik gratis karya para penulis lokal Indonesia." />
+    <meta name="twitter:image" content="https://studio.buku.biz.id/studio-buku-logo.jpg" />
+
+    <!-- Schema.org JSON-LD Structured Data for Googlebot -->
+    <script type="application/ld+json">
+      ${JSON.stringify(jsonLd, null, 2)}
+    </script>
+
+    <!-- Tailwind CSS Standard CDN for Pre-rendered HTML SSR -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900 font-sans">
+    <div id="root">
+      <div class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+        <!-- HEADER -->
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+          <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <a href="/" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
+              Studio Buku
+            </a>
+            <div class="flex items-center space-x-3">
+              <button class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm">
+                Login
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- MAIN BODY -->
+        <main class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-8">
+          <!-- HERO BANNER -->
+          <section class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
+            <div class="inline-flex items-center space-x-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1 rounded-full text-xs font-bold">
+              <span>📚 Platform Kolaborasi Penulisan Naskah Buku untuk Co-authorship</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Ruang Kerja Penulis & Galeri Naskah Terbuka
+            </h1>
+            <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl font-medium">
+              Selamat datang di Studio Buku (studio.buku.biz.id) — wadah penerbitan & penulisan naskah kolaboratif. Jelajahi puluhan karya novel, jurnal akademis, dan karya fiksi/non-fiksi karya para penulis Indonesia.
+            </p>
+          </section>
+
+          <!-- CARDS GRID FOR GOOGLEBOT INDEXING -->
+          <section class="space-y-6">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-black text-slate-900 flex items-center space-x-2">
+                <span>📚 Naskah Terbaru (${publicProjects.length} Naskah Terpublikasi)</span>
+              </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${projectCardsHtml}
+            </div>
+          </section>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 space-y-3 font-sans">
+          <div class="flex flex-wrap items-center justify-center gap-4 text-slate-600 font-medium">
+            <a href="/terms" class="hover:text-amber-600 transition">Syarat & Ketentuan</a>
+            <span>•</span>
+            <a href="/privacy" class="hover:text-amber-600 transition">Kebijakan Privasi</a>
+            <span>•</span>
+            <a href="/pricing" class="hover:text-amber-600 transition">Biaya & Donasi</a>
+          </div>
+          <p class="font-semibold text-slate-700">
+            Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID
+          </p>
+          <p class="text-[11px] text-slate-400">Platform Penulisan Buku Kolaboratif Indonesia</p>
+        </footer>
+      </div>
+    </div>
+
+    <!-- React SPA Entry point -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`;
+  }
+
+  // ROOT FRONTPAGE SEO ENDPOINT
+  app.get("/", async (req, res, next) => {
+    // If request asks for html
+    if (req.headers.accept?.includes("text/html") || req.headers.accept === "*/*" || !req.headers.accept) {
+      const db = readDb();
+      let html = renderFrontpageServerHtml(db);
+      if (vite) {
+        try {
+          html = await vite.transformIndexHtml(req.url, html);
+        } catch (err) {
+          console.warn("Vite transformIndexHtml warning:", err);
+        }
+      }
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.send(html);
+    }
+    next();
+  });
 
   // 1. PUBLIC SEO DOMAIN ENDPOINTS: https://studio.buku.biz/p/:projectSlug/:chapterSlug
   app.get("/p/:projectSlug/:chapterSlug", (req, res) => {
@@ -1520,6 +1485,7 @@ async function startServer() {
   });
   app.use(express.static(process.cwd()));
 
+  // Privacy Policy Route (Google Auth & AdSense Compliant - Light Corporate)
   app.get("/privacy", (req, res) => {
     res.send(`
       <!DOCTYPE html>
@@ -1528,39 +1494,88 @@ async function startServer() {
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Kebijakan Privasi - Studio Buku</title>
-          <style>
-            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; line-height: 1.6; }
-            .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 40px; border-radius: 20px; border: 1px solid #334155; }
-            h1 { color: #fbbf24; margin-bottom: 8px; }
-            h2 { color: #f59e0b; margin-top: 24px; font-size: 1.2rem; }
-            p { color: #cbd5e1; font-size: 0.95rem; }
-            a { color: #fbbf24; text-decoration: none; font-weight: bold; }
-          </style>
+          <script src="https://cdn.tailwindcss.com"></script>
         </head>
-        <body>
-          <div class="container">
-            <h1>Kebijakan Privasi Studio Buku</h1>
-            <p><strong>Terakhir diperbarui: 30 September 2026</strong></p>
-            <p>Studio Buku (studio.buku.biz.id) berkomitmen untuk melindungi privasi dan keamanan data pengguna dan penulis kami.</p>
+        <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col justify-between">
+          <!-- NORMAL FRONTPAGE HEADER -->
+          <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              <a href="/" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
+                Studio Buku
+              </a>
+              <div class="flex items-center space-x-3">
+                <a href="/" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm">
+                  Login
+                </a>
+              </div>
+            </div>
+          </header>
 
-            <h2>1. Pengumpulan Informasi</h2>
-            <p>Kami mengumpulkan informasi akun dasar saat Anda masuk menggunakan Google Authentication (seperti nama, alamat email, dan foto profil) untuk memverifikasi hak akses naskah dan profil penulis Anda.</p>
+          <main class="max-w-4xl mx-auto w-full px-4 py-10 sm:py-12 space-y-8 flex-1">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
+              <h1 class="text-3xl sm:text-4xl font-black text-slate-900">Kebijakan Privasi Studio Buku</h1>
+              <p class="text-xs text-slate-500 font-bold">Terakhir diperbarui: 1 Oktober 2026</p>
+              
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Studio Buku (<strong>studio.buku.biz.id</strong>) berkomitmen untuk melindungi privasi dan keamanan data pengguna, penulis, dan pengunjung situs kami. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi Anda sesuai dengan standar Google Authentication Policy dan Google AdSense Policy.
+              </p>
 
-            <h2>2. Penggunaan Data</h2>
-            <p>Data Anda hanya digunakan untuk menyediakan ruang kerja penulisan naskah, sinkronisasi draf, dan fitur analisis Asisten AI dalam Studio Buku.</p>
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">1. Pengumpulkan Informasi & Otentikasi Google</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Saat Anda menggunakan Studio Buku dan masuk menggunakan fitur <strong>Google Sign-In</strong>, kami mengumpulkan informasi profil dasar berikut:
+              </p>
+              <ul class="list-disc list-inside text-sm text-slate-600 space-y-1 pl-2">
+                <li>Nama lengkap & foto profil pengguna.</li>
+                <li>Alamat email resmi untuk verifikasi hak akses naskah co-authorship.</li>
+                <li>Pengenal unik akun (*Google User ID*).</li>
+              </ul>
 
-            <h2>3. Keamanan Data</h2>
-            <p>Kerahasiaan naskah buku Anda dilindungi dengan enkripsi standar dan kontrol akses otentikasi Firebase Auth.</p>
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">2. Penggunaan Cookie & Iklan Pihak Ketiga (Google AdSense)</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Situs web ini dapat menampilkan iklan yang dilayani oleh <strong>Google AdSense</strong> atau penyedia jaringan iklan pihak ketiga. Kebijakan cookie yang berlaku adalah sebagai berikut:
+              </p>
+              <ul class="list-disc list-inside text-sm text-slate-600 space-y-1 pl-2">
+                <li>Vendor pihak ketiga, termasuk Google, menggunakan cookie untuk menayangkan iklan berdasarkan kunjungan sebelumnya dari pengguna ke situs web ini atau situs web lain.</li>
+                <li>Penggunaan cookie periklanan oleh Google (termasuk *DART Cookie*) memungkinkan Google dan mitranya untuk menayangkan iklan kepada pengguna berdasarkan kunjungan mereka ke situs kami dan/atau situs lain di Internet.</li>
+                <li>Pengguna dapat memilih keluar dari personalisasi iklan dengan mengunjungi <a href="https://adssettings.google.com" target="_blank" rel="noopener" class="text-amber-600 underline font-bold">Pengaturan Iklan Google</a>.</li>
+              </ul>
 
-            <h2>4. Kontak</h2>
-            <p>Untuk pertanyaan mengenai kebijakan privasi ini, Anda dapat menghubungi kami melalui <a href="mailto:Roy.Wikan@gmail.com">Roy.Wikan@gmail.com</a>.</p>
-          </div>
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">3. Penggunaan & Perlindungan Data Naskah</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Naskah dan ide cerita yang Anda tulis di Studio Buku disimpan secara aman. Kami tidak menjual, menyewakan, atau membagikan data pribadi maupun isi naskah Anda kepada pihak ketiga untuk kepentingan komersial tanpa persetujuan Anda.
+              </p>
+
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">4. Hak Pengguna & Penghapusan Data (GDPR / CCPA)</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Anda berhak meminta akses, perbaikan, atau penghapusan permanen atas data pribadi dan naskah Anda dari server kami kapan saja dengan menghubungi tim pengelola privasi kami.
+              </p>
+
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">5. Kontak Pengelola Privasi</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Jika Anda memiliki pertanyaan mengenai Kebijakan Privasi ini, silakan hubungi tim kami di:<br/>
+                <strong>Email Dukungan:</strong> <a href="mailto:kontak@buku.biz.id" class="text-amber-600 underline font-bold">kontak@buku.biz.id</a><br/>
+                <strong>Domain Utama:</strong> https://studio.buku.biz.id
+              </p>
+            </div>
+          </main>
+
+          <!-- FOOTER -->
+          <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 space-y-3 font-sans">
+            <div class="flex flex-wrap items-center justify-center gap-4 text-slate-600 font-medium">
+              <a href="/terms" class="hover:text-amber-600 transition">Syarat & Ketentuan</a>
+              <span>•</span>
+              <a href="/privacy" class="hover:text-amber-600 transition font-bold text-slate-900">Kebijakan Privasi</a>
+              <span>•</span>
+              <a href="/pricing" class="hover:text-amber-600 transition">Biaya & Donasi</a>
+            </div>
+            <p class="font-semibold text-slate-700">Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID</p>
+          </footer>
         </body>
       </html>
     `);
   });
 
-  // Terms of Service Route
+  // Terms of Service Route (Google Auth & AdSense Compliant - Light Corporate)
   app.get("/terms", (req, res) => {
     res.send(`
       <!DOCTYPE html>
@@ -1569,32 +1584,149 @@ async function startServer() {
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <title>Syarat & Ketentuan Layanan - Studio Buku</title>
-          <style>
-            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px 20px; line-height: 1.6; }
-            .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 40px; border-radius: 20px; border: 1px solid #334155; }
-            h1 { color: #fbbf24; margin-bottom: 8px; }
-            h2 { color: #f59e0b; margin-top: 24px; font-size: 1.2rem; }
-            p { color: #cbd5e1; font-size: 0.95rem; }
-            a { color: #fbbf24; text-decoration: none; font-weight: bold; }
-          </style>
+          <script src="https://cdn.tailwindcss.com"></script>
         </head>
-        <body>
-          <div class="container">
-            <h1>Syarat & Ketentuan Layanan Studio Buku</h1>
-            <p><strong>Terakhir diperbarui: 30 September 2026</strong></p>
+        <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col justify-between">
+          <!-- NORMAL FRONTPAGE HEADER -->
+          <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              <a href="/" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
+                Studio Buku
+              </a>
+              <div class="flex items-center space-x-3">
+                <a href="/" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm">
+                  Login
+                </a>
+              </div>
+            </div>
+          </header>
 
-            <h2>1. Ketentuan Umum</h2>
-            <p>Dengan mengakses dan menggunakan Studio Buku (studio.buku.biz.id), Anda menyetujui untuk mematuhi syarat dan ketentuan layanan ini.</p>
+          <main class="max-w-4xl mx-auto w-full px-4 py-10 sm:py-12 space-y-8 flex-1">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
+              <h1 class="text-3xl sm:text-4xl font-black text-slate-900">Syarat & Ketentuan Layanan</h1>
+              <p class="text-xs text-slate-500 font-bold">Terakhir diperbarui: 1 Oktober 2026</p>
 
-            <h2>2. Hak Cipta & Kepemilikan Naskah</h2>
-            <p>Seluruh hak cipta, ide cerita, dan isi naskah yang ditulis di Studio Buku sepenuhnya merupakan milik sah penulis / pengguna.</p>
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">1. Ketentuan Umum</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Dengan mengakses, menjelajahi, dan menggunakan Studio Buku (<strong>studio.buku.biz.id</strong>), Anda menyetujui untuk terikat oleh Syarat dan Ketentuan Layanan ini. Layanan ini disediakan untuk memfasilitasi penulisan buku kolaboratif (*co-authorship*) di Indonesia.
+              </p>
 
-            <h2>3. Penggunaan Layanan</h2>
-            <p>Pengguna dilarang menyalahgunakan layanan untuk mempublikasikan materi yang melanggar hukum atau hak cipta pihak lain.</p>
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">2. Hak Cipta & Kepemilikan Karya</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Seluruh hak cipta, ide cerita, dan isi naskah yang dibuat atau diunggah di Studio Buku sepenuhnya merupakan milik sah penulis / pembuat karya. Studio Buku tidak mengklaim kepemilikan atas naskah Anda.
+              </p>
 
-            <h2>4. Kontak Layanan</h2>
-            <p>Pertanyaan mengenai syarat dan ketentuan dapat dikirimkan ke <a href="mailto:Roy.Wikan@gmail.com">Roy.Wikan@gmail.com</a>.</p>
-          </div>
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">3. Ketentuan Pengiklanan Google AdSense</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Pengguna memahami dan menyetujui bahwa situs ini dapat menampilkan iklan digital dari Google AdSense untuk membantu membiayai operasional server. Pengguna dilarang melakukan klik tidak sah (*invalid clicks*) atau manipulasi iklan dalam bentuk apapun.
+              </p>
+
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">4. Larangan Konten & Etika Penulisan</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Pengguna dilarang menerbitkan naskah yang memuat konten ilegal, plagiarisme, pornografi, ujaran kebencian, atau pelanggaran hak cipta pihak ketiga. Naskah yang melanggar ketentuan dapat dihapus tanpa pemberitahuan sebelumnya.
+              </p>
+
+              <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">5. Kontak Layanan & Bantuan</h2>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                Pertanyaan hukum dan ketertarikan kerjasama dapat diajukan kepada pengelola melalui:<br/>
+                <strong>Email Layanan:</strong> <a href="mailto:kontak@buku.biz.id" class="text-amber-600 underline font-bold">kontak@buku.biz.id</a>
+              </p>
+            </div>
+          </main>
+
+          <!-- FOOTER -->
+          <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 space-y-3 font-sans">
+            <div class="flex flex-wrap items-center justify-center gap-4 text-slate-600 font-medium">
+              <a href="/terms" class="hover:text-amber-600 transition font-bold text-slate-900">Syarat & Ketentuan</a>
+              <span>•</span>
+              <a href="/privacy" class="hover:text-amber-600 transition">Kebijakan Privasi</a>
+              <span>•</span>
+              <a href="/pricing" class="hover:text-amber-600 transition">Biaya & Donasi</a>
+            </div>
+            <p class="font-semibold text-slate-700">Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID</p>
+          </footer>
+        </body>
+      </html>
+    `);
+  });
+
+  // Pricing & Donation Route (Light Corporate)
+  app.get("/pricing", (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="id">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Biaya & Dukungan Donasi - Studio Buku</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col justify-between">
+          <!-- NORMAL FRONTPAGE HEADER -->
+          <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              <a href="/" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
+                Studio Buku
+              </a>
+              <div class="flex items-center space-x-3">
+                <a href="/" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm">
+                  Login
+                </a>
+              </div>
+            </div>
+          </header>
+
+          <main class="max-w-4xl mx-auto w-full px-4 py-10 sm:py-12 space-y-8 flex-1">
+            <div class="text-center space-y-3">
+              <span class="bg-amber-100 text-amber-900 border border-amber-300 px-3.5 py-1 rounded-full text-xs font-bold inline-block">
+                100% Gratis Untuk Penulis & Pembaca
+              </span>
+              <h1 class="text-3xl sm:text-5xl font-black text-slate-900">Biaya & Wadah Dukungan Studio Buku</h1>
+              <p class="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+                Studio Buku (<strong>studio.buku.biz.id</strong>) beroperasi secara penuh tanpa memungut biaya pendaftaran maupun langganan dari para penulis dan pembaca di Indonesia.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+              <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
+                <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block">
+                  Akses Utama (Rp 0)
+                </span>
+                <h2 class="text-xl font-bold text-slate-900">Akses Bebas Biaya</h2>
+                <ul class="list-disc list-inside text-xs text-slate-600 space-y-2 leading-relaxed font-medium">
+                  <li>Pembuatan proyek naskah kolaboratif (*co-authorship*) tanpa batasan jumlah.</li>
+                  <li>Akses penuh ke editor bab, papan ide, log revisi, dan ekspor dokumen.</li>
+                  <li>Publikasi otomatis ke Galeri Naskah Publik & halaman pratinjau HTML.</li>
+                </ul>
+              </div>
+
+              <div class="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm text-center">
+                <span class="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block">
+                  Dukungan Sukarela
+                </span>
+                <h2 class="text-xl font-bold text-slate-900">Donasi Operasional Server</h2>
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                  Scan QRIS di bawah untuk membantu biaya server, domain, dan infrastruktur gratis platform:
+                </p>
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl inline-block mx-auto">
+                  <p class="text-xs font-bold text-slate-800 mb-2">Scan QRIS (DANA / ShopeePay / GoPay / OVO / BCA / Mandiri)</p>
+                  <img src="/QRIS-DANA.jpeg" alt="QRIS Donasi Studio Buku" class="w-44 h-auto rounded-xl border border-slate-300 shadow-sm mx-auto bg-white p-1" />
+                </div>
+              </div>
+            </div>
+          </main>
+
+          <!-- FOOTER -->
+          <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 space-y-3 font-sans">
+            <div class="flex flex-wrap items-center justify-center gap-4 text-slate-600 font-medium">
+              <a href="/terms" class="hover:text-amber-600 transition">Syarat & Ketentuan</a>
+              <span>•</span>
+              <a href="/privacy" class="hover:text-amber-600 transition">Kebijakan Privasi</a>
+              <span>•</span>
+              <a href="/pricing" class="hover:text-amber-600 transition font-bold text-slate-900">Biaya & Donasi</a>
+            </div>
+            <p class="font-semibold text-slate-700">Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID</p>
+          </footer>
         </body>
       </html>
     `);

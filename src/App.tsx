@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { DB, Chapter, Idea, Author, Project, Annotation } from "./types";
 import { WRITER_THEMES, WriterTheme } from "./theme";
 import { Navbar } from "./components/Navbar";
@@ -12,93 +13,23 @@ import { InviteModal } from "./components/InviteModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
 import { PublicReaderView } from "./components/PublicReaderView";
 import { PublicProjectGallery } from "./components/PublicProjectGallery";
+import { PricingView } from "./components/PricingView";
+import { StudioBukuLogo } from "./components/StudioBukuLogo";
+import { INITIAL_SEED_DB } from "./seedData";
+import { LogIn } from "lucide-react";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
 
-const initialDefaultDb: DB = {
-  authors: [
-    { id: "auth_1", name: "Rian Hidayat", role: "Penulis Utama", avatar: "👨‍💻", color: "bg-emerald-500" },
-    { id: "auth_2", name: "Kirana Maharani", role: "Penulis Studio", avatar: "👩‍🎨", color: "bg-indigo-500" }
-  ],
-  projects: [
-    {
-      id: "proj_1",
-      title: "Gema Di Ujung Senja",
-      subtitle: "Novel Fiksi Psikologis & Perjalanan Dua Jiwa",
-      genre: "Fiksi / Drama",
-      synopsis: "Kisah tentang dua sahabat masa kecil yang terpisah selama satu dekade dan dipertemukan kembali dalam proyek restorasi arsip tua di Yogyakarta.",
-      createdAt: new Date().toISOString()
-    }
-  ],
-  chapters: [
-    {
-      id: "chap_1",
-      projectId: "proj_1",
-      title: "Bab 1: Stasiun Tugu Pukul Empat Sore",
-      subtitle: "Pertemuan setelah sepuluh tahun berlalu",
-      content: "Kereta rel listrik berdecit pelan saat memasuki peron jalur tiga Stasiun Tugu. Aroma uap panas bercampur bau khas stasiun tua menyambut kedatangan sore itu. Langit Yogyakarta tampak jingga kemerahan, menepis mendung yang menggantung sejak siang.\n\nArya berdiri di dekat pilar besi bercat hijau pudar. Tangannya menggenggam tiket kertas yang sudah agak kusut. Di seberangnya, seorang perempuan berjas hujan abu-abu melangkah turun dari gerbong ekonomi, membawa ransel kanvas lusuh yang sama persis seperti sepuluh tahun lalu.\n\n'Kamu terlambat lima menit, Kiran,' sapa Arya dengan senyum tipis.\n\nKirana mendengus pelan, lalu tertawa kecil. 'Kemacetan Ring Road tidak bisa diajak kompromi, Ary. Tapi setidaknya kita tepat waktu untuk memulai semua ini.'",
-      order: 1,
-      status: "final",
-      lastEditedBy: "Rian Hidayat",
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "chap_2",
-      projectId: "proj_1",
-      title: "Bab 2: Arsip yang Terlupakan",
-      subtitle: "Menemukan kotak kayu berdebu di loteng",
-      content: "Rumah kakek di kawasan Kotabaru menyimpan lorong waktu tersendiri. Debu lembut menari di bawah sorotan cahaya matahari yang menembus genting kaca.\n\n'Di sinilah kakek menyimpan catatan harian tahun 1965,' ujar Kirana sambil menyeka permukaan kotak kayu jati berukir melati.\n\nArya mendekat, membawa lampu senter kecil. Bau kertas tua semacam vanili kering dan tinta cina langsung menusuk indra penciuman mereka. Lembar demi lembar catatan itu menyimpan teka-teki keluarga yang selama ini terkubur rapat.",
-      order: 2,
-      status: "review",
-      lastEditedBy: "Kirana Maharani",
-      updatedAt: new Date().toISOString()
-    }
-  ],
-  ideas: [
-    {
-      id: "idea_1",
-      projectId: "proj_1",
-      title: "Simbol Kunci Inggris Tua",
-      content: "Kunci inggris peninggalan ayah Arya jadi metafora rekonsiliasi. Setiap bab bisa disisipkan kutipan tentang memperbaiki mesin yang macet.",
-      category: "Plot",
-      authorId: "auth_1",
-      pinned: true,
-      createdAt: new Date().toISOString()
-    }
-  ],
-  logs: [
-    {
-      id: "log_1",
-      projectId: "proj_1",
-      chapterId: "chap_1",
-      chapterTitle: "Bab 1: Stasiun Tugu Pukul Empat Sore",
-      authorName: "Rian Hidayat",
-      action: "Membuat bab baru dan menulis draf awal",
-      timestamp: new Date().toISOString()
-    }
-  ],
-  annotations: [],
-  glossary: [
-    {
-      id: "glos_1",
-      projectId: "proj_1",
-      term: "Arya Perkasa",
-      category: "Karakter",
-      definition: "Tokoh utama pria, 28 tahun, konservator arsip sejarah lulusan UGM.",
-      aliases: "Ary, Arya",
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: "glos_2",
-      projectId: "proj_1",
-      term: "Kirana Maharani",
-      category: "Karakter",
-      definition: "Tokoh utama wanita, jurnalis lepas berjiwa petualang.",
-      aliases: "Kiran, Kirana",
-      updatedAt: new Date().toISOString()
-    }
-  ]
-};
+const initialDefaultDb: DB = INITIAL_SEED_DB;
+
+function slugify(text: string): string {
+  return (text || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "naskah";
+}
 
 export default function App() {
   const [userSession, setUserSession] = useState<UserSession | null>(() => {
@@ -120,6 +51,7 @@ export default function App() {
   });
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Global Auto-Save Status State for Navbar
@@ -221,12 +153,125 @@ export default function App() {
     pathname.startsWith("/buku/") ||
     pathname.startsWith("/public/");
 
+  const [showPricingView, setShowPricingView] = useState(pathname === "/pricing");
+
+  if (pathname === "/pricing" || showPricingView) {
+    return (
+      <PricingView
+        onBack={() => setShowPricingView(false)}
+        onOpenLogin={() => setIsLoginModalOpen(true)}
+      />
+    );
+  }
+
   if (isPublicRoute) {
     return <PublicReaderView initialDb={db || undefined} />;
   }
 
   if (!userSession) {
-    return <LoginGate onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans select-none md:select-text">
+        <Helmet>
+          <title>Studio Buku – Platform Kolaborasi Penulisan Naskah Buku untuk Co-authorship</title>
+          <meta name="description" content="Studio Buku (studio.buku.biz.id): Platform penulisan dan penerbitan naskah kolaboratif. Jelajahi 60+ naskah novel, jurnal akademis, dan fiksi/non-fiksi karya penulis Indonesia." />
+          <meta property="og:title" content="Studio Buku – Platform Kolaborasi Penulisan Naskah Buku" />
+          <meta property="og:description" content="Jelajahi puluhan naskah novel, jurnal akademis, dan karya fiksi/non-fiksi terpublikasi karya para penulis di Studio Buku." />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://studio.buku.biz.id/" />
+          <meta property="og:site_name" content="Studio Buku" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="Studio Buku – Platform Penulisan Naskah Buku" />
+          <meta name="twitter:description" content="Dapatkan akses ke galeri naskah publik gratis karya para penulis lokal Indonesia." />
+          <link rel="canonical" href="https://studio.buku.biz.id/" />
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "Studio Buku",
+              "applicationCategory": "BooksApplication",
+              "operatingSystem": "All",
+              "description": "Platform kolaborasi penulisan naskah buku untuk co-authorship dan penerbitan naskah digital.",
+              "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" }
+            })}
+          </script>
+        </Helmet>
+        {/* PUBLIC FRONTPAGE HEADER BAR - LIGHT CORPORATE */}
+        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            {/* Logo frontpage: Cukup "Studio Buku" saja tanpa logo icon & tanpa "Nulis Buku Bareng" */}
+            <a href="/" className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
+              Studio Buku
+            </a>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
+              >
+                <LogIn className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                <span>Login</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* HERO BANNER SECTION - LIGHT CORPORATE */}
+        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
+            <div className="inline-flex items-center space-x-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1 rounded-full text-xs font-bold">
+              <span>📚 Platform Kolaborasi Penulisan Naskah Buku untuk Co-authorship</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Ruang Kerja Penulis & Galeri Naskah Terbuka
+            </h1>
+            <p className="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-3xl font-medium">
+              Selamat datang di Studio Buku (studio.buku.biz.id) — wadah penerbitan & penulisan naskah kolaboratif. Jelajahi puluhan karya novel, jurnal akademis, dan buku fiksi/non-fiksi karya para penulis Indonesia.
+            </p>
+          </div>
+        </section>
+
+        {/* PUBLIC GALLERY FRONTPAGE BODY */}
+        <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
+          <PublicProjectGallery
+            projects={db?.projects || initialDefaultDb.projects}
+            chapters={db?.chapters || initialDefaultDb.chapters}
+            onSelectPublicProject={(p) => {
+              window.open(`/p/${slugify(p.title)}`, "_blank");
+            }}
+          />
+        </main>
+
+        {/* FOOTER - LIGHT CORPORATE */}
+        <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 space-y-3 font-sans">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-slate-600 font-medium">
+            <a href="/terms" className="hover:text-amber-600 transition">Syarat & Ketentuan</a>
+            <span>•</span>
+            <a href="/privacy" className="hover:text-amber-600 transition">Kebijakan Privasi</a>
+            <span>•</span>
+            <button onClick={() => setShowPricingView(true)} className="hover:text-amber-600 transition cursor-pointer">
+              Biaya & Donasi
+            </button>
+          </div>
+          <p className="font-semibold text-slate-700">
+            Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID
+          </p>
+          <p className="text-[11px] text-slate-400">
+            Platform Penulisan Buku Kolaboratif Indonesia
+          </p>
+        </footer>
+
+        {/* LOGIN MODAL OVERLAY */}
+        {isLoginModalOpen && (
+          <LoginGate
+            onLoginSuccess={(session) => {
+              setIsLoginModalOpen(false);
+              handleLoginSuccess(session);
+            }}
+            onClose={() => setIsLoginModalOpen(false)}
+          />
+        )}
+      </div>
+    );
   }
 
   if (loading || !db || !currentAuthor) {

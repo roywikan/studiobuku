@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { DB, Chapter, Project, GlossaryItem } from "../types";
 import { BookOpen, Sun, Moon, Scroll, Printer, ChevronLeft, ChevronRight, X, Mail, Globe, BookMarked } from "lucide-react";
 
@@ -183,8 +184,65 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
     light: "bg-white border-slate-200 text-slate-900 shadow-xl"
   }[readerTheme];
 
+  // Dynamic SEO & Metadata Calculation for Googlebot Indexing
+  const currentProjSlug = slugify(project.title);
+  const currentChapSlug = !isFullBook && currentChapter ? slugify(currentChapter.title) : "";
+
+  const canonicalUrl = !isFullBook && currentChapSlug
+    ? `https://studio.buku.biz.id/p/${currentProjSlug}/${currentChapSlug}`
+    : `https://studio.buku.biz.id/p/${currentProjSlug}`;
+
+  const pageTitle = !isFullBook && currentChapter
+    ? `${currentChapter.title} — ${project.title} | Studio Buku`
+    : `${project.title}${project.subtitle ? ` (${project.subtitle})` : ''} | Studio Buku`;
+
+  const rawDesc = !isFullBook && currentChapter?.content
+    ? currentChapter.content.replace(/[#*`_\[\]]/g, ' ').replace(/\s+/g, ' ').trim()
+    : (project.synopsis || "").replace(/\s+/g, ' ').trim();
+
+  const metaDescription = (rawDesc.length > 155
+    ? rawDesc.substring(0, 152) + "..."
+    : rawDesc) || `Baca naskah ${project.title} karya ${project.ownerName || "Penulis Studio"} di Studio Buku.`;
+
+  const bookSchema = {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": project.title,
+    "headline": !isFullBook && currentChapter ? currentChapter.title : project.title,
+    "description": metaDescription,
+    "genre": project.genre || "Fiksi",
+    "inLanguage": "id",
+    "url": canonicalUrl,
+    "author": {
+      "@type": "Person",
+      "name": project.ownerName || "Penulis Studio"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Studio Buku",
+      "url": "https://studio.buku.biz.id"
+    }
+  };
+
   return (
     <div className={`min-h-screen ${themeClasses} font-serif transition-colors duration-300 pb-20 select-text`}>
+      {/* DYNAMIC REACT HELMET FOR UNIQUE PROJECT & CHAPTER SEO */}
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="Studio Buku" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <script type="application/ld+json">
+          {JSON.stringify(bookSchema)}
+        </script>
+      </Helmet>
       {/* PURE HEADER BAR - NO STUDIO EDITOR MENUS AT ALL */}
       <header className={`sticky top-0 z-40 border-b px-4 py-3 ${cardClasses} font-sans`}>
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
@@ -258,7 +316,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <a
-              href={`mailto:Roy.Wikan@gmail.com?subject=Kontak%20Penulis%20Naskah%20${encodeURIComponent(project.title)}`}
+              href={`mailto:kontak@buku.biz.id?subject=Kontak%20Penulis%20Naskah%20${encodeURIComponent(project.title)}`}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/50 rounded-full text-xs font-black transition flex items-center space-x-1.5 shadow-md"
             >
               <Mail className="w-3.5 h-3.5" />
@@ -399,7 +457,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
         {/* FOOTER */}
         <footer className="pt-12 border-t border-slate-800 text-center font-sans text-xs opacity-90 space-y-2">
           <p className="font-bold text-amber-300">
-            Hak cipta milik : Roy.Wikan@gmail.com, Nulis Buku Bareng di{" "}
+            Hak cipta milik : masing masing user penulisnya, Nulis Buku Bareng di{" "}
             <a href="https://Studio.Buku.Biz.ID" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-400">
               https://Studio.Buku.Biz.ID
             </a>
