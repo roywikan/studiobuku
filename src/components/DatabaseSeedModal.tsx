@@ -244,7 +244,7 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span className="flex items-center space-x-1 font-bold text-amber-300">
                   <Terminal className="w-3.5 h-3.5" />
-                  <span>Atau jalankan via Wrangler CLI:</span>
+                  <span>Jalankan via Wrangler CLI:</span>
                 </span>
                 <button
                   onClick={handleCopyCli}
@@ -257,6 +257,58 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
               <code className="block bg-black/60 p-2 rounded-lg text-[10px] text-amber-200/90 font-mono break-all select-all">
                 {cliCommand}
               </code>
+            </div>
+
+            {/* Eksekusi Manual via Cloudflare D1 Data Explorer */}
+            <div className="p-3 bg-purple-950/30 border border-purple-500/30 rounded-xl space-y-2 text-left">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-amber-300 flex items-center space-x-1">
+                  <Database className="w-3.5 h-3.5" />
+                  <span>File SQL untuk D1 Data Explorer:</span>
+                </span>
+                <span className="text-[10px] text-purple-300">Siap Paste</span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                Buka file berikut, salin seluruh isinya, lalu jalankan di menu <strong>Cloudflare Dashboard → D1 → studiobuku-db → Console / Data Explorer</strong>:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                <a
+                  href="/schema.sql"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 bg-slate-900 hover:bg-slate-800 border border-white/15 rounded-lg text-amber-300 font-bold flex items-center justify-between transition"
+                >
+                  <span>📄 schema.sql Lengkap</span>
+                  <span className="text-[10px] text-slate-400 font-normal">730 KB</span>
+                </a>
+                <a
+                  href="/d1-sql/01_tables_and_60_projects.sql"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 bg-slate-900 hover:bg-slate-800 border border-white/15 rounded-lg text-emerald-300 font-bold flex items-center justify-between transition"
+                >
+                  <span>1️⃣ Tabel & 60 Proyek</span>
+                  <span className="text-[10px] text-slate-400 font-normal">34 KB</span>
+                </a>
+                <a
+                  href="/d1-sql/02_chapters_part1.sql"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 bg-slate-900 hover:bg-slate-800 border border-white/15 rounded-lg text-purple-200 font-bold flex items-center justify-between transition"
+                >
+                  <span>2️⃣ 240 Bab Pertama</span>
+                  <span className="text-[10px] text-slate-400 font-normal">347 KB</span>
+                </a>
+                <a
+                  href="/d1-sql/03_chapters_part2.sql"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 bg-slate-900 hover:bg-slate-800 border border-white/15 rounded-lg text-purple-200 font-bold flex items-center justify-between transition"
+                >
+                  <span>3️⃣ 240 Bab Kedua</span>
+                  <span className="text-[10px] text-slate-400 font-normal">350 KB</span>
+                </a>
+              </div>
             </div>
           </div>
         )}

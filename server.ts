@@ -226,6 +226,22 @@ async function startServer() {
   app.all("/api/seed", handleDatabaseSeed);
   app.all("/api/db/bootstrap", handleDatabaseSeed);
 
+  // Serve SQL files directly for Cloudflare D1 Data Explorer
+  app.get("/schema.sql", (req, res) => {
+    res.type("text/plain").sendFile(path.join(process.cwd(), "schema.sql"));
+  });
+
+  app.get("/d1-sql/:file", (req, res) => {
+    const filename = req.params.file;
+    const safeFile = path.basename(filename);
+    const filePath = path.join(process.cwd(), "d1-sql", safeFile);
+    if (fs.existsSync(filePath)) {
+      res.type("text/plain").sendFile(filePath);
+    } else {
+      res.status(404).send("File not found");
+    }
+  });
+
   // Public Projects API with Pagination
   app.get("/api/public/projects", (req, res) => {
     const db = readDb();
