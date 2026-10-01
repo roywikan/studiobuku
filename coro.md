@@ -2,7 +2,7 @@
 
 Dokumen ini berisi panduan resmi langkah demi langkah untuk menginstal dan mengoperasikan aplikasi **Studio Buku** dari repository GitHub `/bookstudio` ke infrastruktur **Cloudflare** menggunakan **Cloudflare D1 Database** dan domain kustom `studio.buku.biz.id`.
 
----
+
 
 ## 📌 Rincian Spesifikasi & Konfigurasi
 
