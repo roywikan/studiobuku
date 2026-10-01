@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StudioBukuLogo } from "./StudioBukuLogo";
-import { LogIn, Key, User, ShieldCheck, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
+import { LogIn, Key, User, ShieldCheck, Loader2, AlertTriangle, ExternalLink, X } from "lucide-react";
 import { auth, googleProvider } from "../firebase";
 import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
 
@@ -15,9 +15,10 @@ export interface UserSession {
 
 interface LoginGateProps {
   onLoginSuccess: (session: UserSession) => void;
+  onClose?: () => void;
 }
 
-export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
+export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess, onClose }) => {
   const [activeMode, setActiveTab] = useState<"google" | "password">("google");
   
   // Password Mode Form
@@ -110,6 +111,18 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   return (
     <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-2xl z-50 flex items-center justify-center p-4 font-sans select-none text-white">
       <div className="max-w-md w-full bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+        
+        {/* Optional Close Button */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-slate-800 transition z-20"
+            title="Tutup & Kembali ke Galeri Publik"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
         
         {/* Glow Accent Header */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />

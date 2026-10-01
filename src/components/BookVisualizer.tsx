@@ -36,7 +36,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
   const [showQrisModal, setShowQrisModal] = useState(false);
   const [copiedType, setCopiedType] = useState<"chapter" | "project" | null>(null);
 
-  const authorCopyrightText = `Hak cipta milik : ${currentAuthor?.name || "Roy.Wikan@gmail.com"}, Nulis Buku Bareng di https://Studio.Buku.Biz.ID`;
+  const authorCopyrightText = `Hak cipta milik : ${currentAuthor?.name || "masing masing user penulisnya"}, Nulis Buku Bareng di https://Studio.Buku.Biz.ID`;
 
   const totalWords = chapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
   const currentChapter = chapters[activeChapterIndex] || chapters[0];
