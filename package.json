@@ -14,6 +14,7 @@
     "db:bootstrap:local": "npx wrangler d1 execute studiobuku-db --local --file=./schema.sql"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^9.3.0",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",

@@ -29,6 +29,12 @@ service cloud.firestore {
       allow create, update, delete: if isSignedIn();
     }
 
+    // Authors Collection
+    match /authors/{authorId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
     // Ideas Collection
     match /ideas/{ideaId} {
       allow read: if true;
