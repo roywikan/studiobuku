@@ -22,7 +22,9 @@ function escapeHtml(unsafe: string): string {
 }
 
 function readDatabase(): DB {
-  const dbPath = path.join(process.cwd(), "db.json");
+  const dataDbPath = path.join(process.cwd(), "data", "db.json");
+  const rootDbPath = path.join(process.cwd(), "db.json");
+  const dbPath = fs.existsSync(dataDbPath) ? dataDbPath : rootDbPath;
   if (fs.existsSync(dbPath)) {
     try {
       const data = fs.readFileSync(dbPath, "utf-8");
