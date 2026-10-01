@@ -71,8 +71,8 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
     return true;
   });
 
-  // Statistics Panel State & Session Timer
-  const [showStatsPanel, setShowStatsPanel] = useState(true);
+  // Statistics Panel State & Session Timer (Default collapsed)
+  const [showStatsPanel, setShowStatsPanel] = useState(false);
   const [sessionSeconds, setSessionSeconds] = useState(0);
 
   // Target Settings (Daily vs Project Target) Persisted in LocalStorage

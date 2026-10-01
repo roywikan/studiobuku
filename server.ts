@@ -723,7 +723,7 @@ async function startServer() {
         {
           "@type": "DonateAction",
           "name": "Sponsori / Dukung Penulis (Investor & Donatur)",
-          "target": "mailto:Roy.Wikan@gmail.com?subject=Sponsorship%20Naskah%20Studio%20Buku"
+          "target": "mailto:info@studio.buku.biz.id?subject=Sponsorship%20Naskah%20Studio%20Buku"
         },
         {
           "@type": "ReadAction",
@@ -961,7 +961,7 @@ async function startServer() {
                 ${escapeHtml(project.synopsis)}
               </p>
               <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-family:system-ui;">
-                <a href="mailto:Roy.Wikan@gmail.com?subject=Kontak%20Penulis%20Naskah%20${encodeURIComponent(project.title)}" 
+                <a href="mailto:info@studio.buku.biz.id?subject=Kontak%20Penulis%20Naskah%20${encodeURIComponent(project.title)}" 
                    style="background:rgba(255,255,255,0.12); color:var(--text); padding:8px 18px; border-radius:20px; font-weight:800; text-decoration:none; font-size:0.8rem; border:1px solid var(--border);">
                    ✉️ Kontak Penulis
                 </a>
@@ -1483,6 +1483,82 @@ async function startServer() {
   app.get("/QRIS-DANA.jpeg", (req, res) => {
     res.sendFile(path.join(process.cwd(), "QRIS-DANA.jpeg"));
   });
+
+  // Dynamic XML Sitemap Endpoint for Googlebot & Search Engines
+  app.get("/sitemap.xml", (req, res) => {
+    try {
+      const db = readDb();
+      const baseUrl = "https://studio.buku.biz.id";
+      const publicProjects = (db.projects || []).filter(p => !p.isPrivate);
+
+      const staticPages = [
+        { url: `${baseUrl}/`, priority: "1.0", changefreq: "daily" },
+        { url: `${baseUrl}/pricing`, priority: "0.8", changefreq: "weekly" },
+        { url: `${baseUrl}/terms`, priority: "0.5", changefreq: "monthly" },
+        { url: `${baseUrl}/privacy`, priority: "0.5", changefreq: "monthly" },
+      ];
+
+      const projectUrls: string[] = [];
+
+      publicProjects.forEach(p => {
+        const projSlug = slugify(p.title);
+        const pChapters = (db.chapters || []).filter(c => c.projectId === p.id);
+        const lastModDate = new Date((p as any).updatedAt || p.createdAt || Date.now()).toISOString().split("T")[0];
+
+        // Main project detail URL
+        projectUrls.push(`
+  <url>
+    <loc>${baseUrl}/p/${projSlug}</loc>
+    <lastmod>${lastModDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>`);
+
+        // Individual chapter URLs
+        pChapters.forEach(c => {
+          const chapSlug = slugify(c.title);
+          const chapLastMod = new Date(c.updatedAt || (c as any).createdAt || Date.now()).toISOString().split("T")[0];
+          projectUrls.push(`
+  <url>
+    <loc>${baseUrl}/p/${projSlug}/${chapSlug}</loc>
+    <lastmod>${chapLastMod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`);
+        });
+      });
+
+      const staticUrlsXml = staticPages.map(page => `
+  <url>
+    <loc>${page.url}</loc>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`).join("");
+
+      const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${staticUrlsXml}${projectUrls.join("")}
+</urlset>`;
+
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.send(sitemapXml);
+    } catch (err: any) {
+      console.error("Error generating sitemap.xml:", err);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  // Dynamic robots.txt Endpoint referencing Sitemap
+  app.get("/robots.txt", (req, res) => {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(`User-agent: *
+Allow: /
+
+Sitemap: https://studio.buku.biz.id/sitemap.xml
+`);
+  });
+
   app.use(express.static(process.cwd()));
 
   // Privacy Policy Route (Google Auth & AdSense Compliant - Light Corporate)

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { DB, Chapter, Project, GlossaryItem } from "../types";
-import { BookOpen, Sun, Moon, Scroll, Printer, ChevronLeft, ChevronRight, X, Mail, Globe, BookMarked } from "lucide-react";
+import { BookOpen, Sun, Moon, Scroll, Printer, ChevronLeft, ChevronRight, X, Mail, Globe, BookMarked, BarChart3, ChevronUp, ChevronDown } from "lucide-react";
 
 interface PublicReaderViewProps {
   initialDb?: DB;
@@ -90,6 +90,7 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
   const [activeGlossaryTerm, setActiveGlossaryTerm] = useState<GlossaryItem | null>(null);
   const [showFullGlossary, setShowFullGlossary] = useState<boolean>(false);
   const [showQrisModal, setShowQrisModal] = useState<boolean>(false);
+  const [showStatsInfo, setShowStatsInfo] = useState<boolean>(false);
 
   // Parse path parameters
   const pathname = window.location.pathname; // e.g. /p/gema-di-ujung-senja/bab-1...
@@ -356,11 +357,27 @@ export const PublicReaderView: React.FC<PublicReaderViewProps> = ({ initialDb })
             <p className="text-sm sm:text-base italic opacity-80">{project.subtitle}</p>
           )}
 
-          <div className="flex flex-wrap gap-3 text-xs font-sans opacity-75 pt-2">
-            <span>📚 <strong>Naskah:</strong> {project.title}</span>
-            <span>🏷️ <strong>Genre:</strong> {project.genre}</span>
-            <span>📝 <strong>Volume:</strong> {wordCount.toLocaleString("id-ID")} Kata</span>
-            <span>⏱️ <strong>Estimasi Baca:</strong> ~{readTime} Menit</span>
+          {/* Collapsible Info & Statistik Naskah - Collapsed by default */}
+          <div className="pt-2 font-sans">
+            <button
+              onClick={() => setShowStatsInfo(!showStatsInfo)}
+              className="inline-flex items-center space-x-2 text-xs font-bold text-amber-400 hover:text-amber-300 transition bg-slate-900/80 hover:bg-slate-800 border border-amber-500/30 px-3.5 py-1.5 rounded-full cursor-pointer shadow-sm"
+              title="Klik untuk membuka / menutup statistik naskah"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-amber-400" />
+              <span>📊 Info & Statistik Naskah ({wordCount.toLocaleString("id-ID")} Kata)</span>
+              {showStatsInfo ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+
+            {showStatsInfo && (
+              <div className="flex flex-wrap gap-3 text-xs font-sans opacity-90 pt-3 border-t border-slate-800/80 mt-3 bg-slate-900/40 p-3.5 rounded-xl border border-amber-500/20">
+                <span>📚 <strong>Naskah:</strong> {project.title}</span>
+                <span>🏷️ <strong>Genre:</strong> {project.genre}</span>
+                <span>📝 <strong>Volume:</strong> {wordCount.toLocaleString("id-ID")} Kata</span>
+                <span>⏱️ <strong>Estimasi Baca:</strong> ~{readTime} Menit</span>
+                <span>✍️ <strong>Penulis:</strong> {project.ownerName || "Penulis Studio"}</span>
+              </div>
+            )}
           </div>
         </div>
 
