@@ -11,14 +11,31 @@ import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
-import { PublicReaderView } from "./components/PublicReaderView";
-import { PublicProjectGallery } from "./components/PublicProjectGallery";
-import { PricingView } from "./components/PricingView";
 import { StudioBukuLogo } from "./components/StudioBukuLogo";
 import { INITIAL_SEED_DB } from "./seedData";
-import { LogIn } from "lucide-react";
+import { LogIn, BookOpen } from "lucide-react";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
+
+// Code-splitting via React.lazy for Core Web Vitals optimization
+const PublicReaderView = React.lazy(() =>
+  import("./components/PublicReaderView").then(m => ({ default: m.PublicReaderView }))
+);
+const PublicProjectGallery = React.lazy(() =>
+  import("./components/PublicProjectGallery").then(m => ({ default: m.PublicProjectGallery }))
+);
+const PricingView = React.lazy(() =>
+  import("./components/PricingView").then(m => ({ default: m.PricingView }))
+);
+
+const LoadingFallback: React.FC = () => (
+  <div className="min-h-[300px] flex items-center justify-center font-sans p-8">
+    <div className="space-y-3 text-center">
+      <BookOpen className="w-8 h-8 animate-bounce mx-auto text-amber-500" />
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Memuat Komponen Studio Buku...</p>
+    </div>
+  </div>
+);
 
 const initialDefaultDb: DB = INITIAL_SEED_DB;
 
@@ -157,15 +174,21 @@ export default function App() {
 
   if (pathname === "/pricing" || showPricingView) {
     return (
-      <PricingView
-        onBack={() => setShowPricingView(false)}
-        onOpenLogin={() => setIsLoginModalOpen(true)}
-      />
+      <React.Suspense fallback={<LoadingFallback />}>
+        <PricingView
+          onBack={() => setShowPricingView(false)}
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+        />
+      </React.Suspense>
     );
   }
 
   if (isPublicRoute) {
-    return <PublicReaderView initialDb={db || undefined} />;
+    return (
+      <React.Suspense fallback={<LoadingFallback />}>
+        <PublicReaderView initialDb={db || undefined} />
+      </React.Suspense>
+    );
   }
 
   if (!userSession) {
@@ -232,13 +255,15 @@ export default function App() {
 
         {/* PUBLIC GALLERY FRONTPAGE BODY */}
         <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
-          <PublicProjectGallery
-            projects={db?.projects || initialDefaultDb.projects}
-            chapters={db?.chapters || initialDefaultDb.chapters}
-            onSelectPublicProject={(p) => {
-              window.open(`/p/${slugify(p.title)}`, "_blank");
-            }}
-          />
+          <React.Suspense fallback={<LoadingFallback />}>
+            <PublicProjectGallery
+              projects={db?.projects || initialDefaultDb.projects}
+              chapters={db?.chapters || initialDefaultDb.chapters}
+              onSelectPublicProject={(p) => {
+                window.open(`/p/${slugify(p.title)}`, "_blank");
+              }}
+            />
+          </React.Suspense>
         </main>
 
         {/* FOOTER - LIGHT CORPORATE */}
