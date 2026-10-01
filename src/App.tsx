@@ -323,22 +323,24 @@ export default function App() {
   }
 
   // Author privilege project filtering:
-  // A logged in author can ONLY see & edit projects they initiated (ownerId) OR were invited to co-author (coAuthors)
+  // Shows projects initiated by the author, co-authored projects, and shared Studio Buku catalog projects
   const authorProjects = (db.projects || []).filter((p) => {
     if (!currentAuthor && !userSession) return true;
     const authorId = currentAuthor?.id || userSession?.id || "";
     const authorName = currentAuthor?.name || userSession?.name || "";
     const authorEmail = userSession?.email || "";
 
-    // Legacy project fallback: if no ownerId is set, default accessible to initial authors
-    if (!p.ownerId) return true;
-
     const isOwner = p.ownerId === authorId || p.ownerId === authorName || p.ownerId === authorEmail;
     const isCoAuthor = (p.coAuthors || []).some(
       (ca) => ca === authorId || ca === authorName || ca === authorEmail
     );
+    if (isOwner || isCoAuthor) return true;
 
-    return isOwner || isCoAuthor;
+    // Collaborative Studio Buku catalog projects & public projects are accessible to all studio writers
+    if (!p.isPrivate) return true;
+    if (!p.ownerId || p.ownerId.startsWith("auth_") || p.ownerId === "auth_session") return true;
+
+    return false;
   });
 
   const project =

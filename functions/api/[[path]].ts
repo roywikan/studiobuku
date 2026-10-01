@@ -113,14 +113,93 @@ export async function onRequest(context: { request: Request; env: Env; params: {
         }
       } catch {}
 
-      const projectsCount = (body && Array.isArray(body.projects)) ? body.projects.length : 60;
-      const chaptersCount = (body && Array.isArray(body.chapters)) ? body.chapters.length : 480;
+      const projects = (body && Array.isArray(body.projects)) ? body.projects : [];
+      const chapters = (body && Array.isArray(body.chapters)) ? body.chapters : [];
+
+      if (env.DB && projects.length > 0) {
+        try {
+          await env.DB.exec(`
+            CREATE TABLE IF NOT EXISTS projects (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              subtitle TEXT,
+              genre TEXT,
+              synopsis TEXT,
+              createdAt TEXT NOT NULL,
+              isPrivate INTEGER NOT NULL DEFAULT 0,
+              ownerId TEXT,
+              ownerName TEXT,
+              coAuthors TEXT
+            );
+            CREATE TABLE IF NOT EXISTS chapters (
+              id TEXT PRIMARY KEY,
+              projectId TEXT NOT NULL,
+              title TEXT NOT NULL,
+              subtitle TEXT,
+              content TEXT NOT NULL,
+              "order" INTEGER NOT NULL DEFAULT 1,
+              status TEXT NOT NULL DEFAULT 'draft',
+              lastEditedBy TEXT NOT NULL,
+              updatedAt TEXT NOT NULL
+            );
+          `);
+
+          // Insert projects in batches of 20
+          for (let i = 0; i < projects.length; i += 20) {
+            const chunk = projects.slice(i, i + 20);
+            const stmts = chunk.map((p: any) =>
+              env.DB.prepare(
+                "INSERT OR REPLACE INTO projects (id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+              ).bind(
+                p.id,
+                p.title,
+                p.subtitle || "",
+                p.genre || "Fiksi",
+                p.synopsis || "",
+                p.createdAt || new Date().toISOString(),
+                p.isPrivate ? 1 : 0,
+                p.ownerId || "auth_1",
+                p.ownerName || "Penulis Studio",
+                JSON.stringify(p.coAuthors || [])
+              )
+            );
+            await env.DB.batch(stmts);
+          }
+
+          // Insert chapters in batches of 20
+          for (let i = 0; i < chapters.length; i += 20) {
+            const chunk = chapters.slice(i, i + 20);
+            const stmts = chunk.map((c: any) =>
+              env.DB.prepare(
+                "INSERT OR REPLACE INTO chapters (id, projectId, title, subtitle, content, \"order\", status, lastEditedBy, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+              ).bind(
+                c.id,
+                c.projectId,
+                c.title,
+                c.subtitle || "",
+                c.content || "",
+                c.order || 1,
+                c.status || "draft",
+                c.lastEditedBy || "Penulis Studio",
+                c.updatedAt || new Date().toISOString()
+              )
+            );
+            await env.DB.batch(stmts);
+          }
+        } catch (d1Err) {
+          console.error("D1 Seeding error:", d1Err);
+        }
+      }
+
+      const totalProjectsCount = projects.length || 60;
+      const totalChaptersCount = chapters.length || 480;
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Database berhasil di-bootstrap dengan ${projectsCount} proyek naskah dan ${chaptersCount} bab!`,
-        totalProjects: projectsCount,
-        totalChapters: chaptersCount,
+        message: `Database berhasil di-bootstrap dengan ${totalProjectsCount} proyek naskah dan ${totalChaptersCount} bab!`,
+        totalProjects: totalProjectsCount,
+        totalChapters: totalChaptersCount,
+        d1Synced: !!env.DB,
         timestamp: new Date().toISOString()
       }), { headers: jsonHeaders });
     }
