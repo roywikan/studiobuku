@@ -24,7 +24,10 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
   const [genre, setGenre] = useState(project.genre || "Fiksi / Novel");
   const [synopsis, setSynopsis] = useState(project.synopsis || "");
   const [isPrivate, setIsPrivate] = useState<boolean>(!!project.isPrivate);
-  const [coAuthors, setCoAuthors] = useState<string[]>(project.coAuthors || []);
+  const initialCoAuthors: string[] = Array.isArray(project.coAuthors)
+    ? project.coAuthors
+    : (typeof project.coAuthors === "string" ? (() => { try { return JSON.parse(project.coAuthors); } catch { return [project.coAuthors]; } })() : []);
+  const [coAuthors, setCoAuthors] = useState<string[]>(initialCoAuthors);
   const [newCoAuthorInput, setNewCoAuthorInput] = useState("");
 
   const [saving, setSaving] = useState(false);

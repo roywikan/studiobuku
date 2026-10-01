@@ -88,6 +88,26 @@ const defaultData = {
   ]
 };
 
+function normalizeD1Project(p: any) {
+  if (!p) return p;
+  let coAuthorsArr: string[] = [];
+  if (Array.isArray(p.coAuthors)) {
+    coAuthorsArr = p.coAuthors;
+  } else if (typeof p.coAuthors === "string") {
+    try {
+      const parsed = JSON.parse(p.coAuthors);
+      coAuthorsArr = Array.isArray(parsed) ? parsed : (p.coAuthors.trim() ? [p.coAuthors.trim()] : []);
+    } catch {
+      coAuthorsArr = p.coAuthors.trim() ? [p.coAuthors.trim()] : [];
+    }
+  }
+  return {
+    ...p,
+    isPrivate: Boolean(p.isPrivate),
+    coAuthors: coAuthorsArr
+  };
+}
+
 export async function onRequest(context: { request: Request; env: Env; params: { path: string[] } }) {
   const { request, env, params } = context;
   const path = params.path ? params.path.join("/") : "";
@@ -218,9 +238,12 @@ export async function onRequest(context: { request: Request; env: Env; params: {
         const glossaryRes = await env.DB.prepare("SELECT * FROM glossary").all();
         const annotationsRes = await env.DB.prepare("SELECT * FROM annotations").all();
 
+        const rawProjects = (projectsRes.results && projectsRes.results.length > 0) ? projectsRes.results : defaultData.projects;
+        const normalizedProjects = rawProjects.map(normalizeD1Project);
+
         const dbData = {
           authors: defaultData.authors,
-          projects: (projectsRes.results && projectsRes.results.length > 0) ? projectsRes.results : defaultData.projects,
+          projects: normalizedProjects,
           chapters: (chaptersRes.results && chaptersRes.results.length > 0) ? chaptersRes.results : defaultData.chapters,
           ideas: ideasRes.results || defaultData.ideas,
           logs: logsRes.results || defaultData.logs,
@@ -255,7 +278,7 @@ export async function onRequest(context: { request: Request; env: Env; params: {
       const total = allProjects.length;
       const totalPages = Math.max(1, Math.ceil(total / limit));
       const startIndex = (page - 1) * limit;
-      const paginated = allProjects.slice(startIndex, startIndex + limit);
+      const paginated = allProjects.slice(startIndex, startIndex + limit).map(normalizeD1Project);
 
       return new Response(JSON.stringify({
         projects: paginated,

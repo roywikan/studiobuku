@@ -49,6 +49,27 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "") || "naskah";
 }
 
+function normalizeProject(p: any): Project {
+  if (!p) return p;
+  let coAuthorsList: string[] = [];
+  if (Array.isArray(p.coAuthors)) {
+    coAuthorsList = p.coAuthors;
+  } else if (typeof p.coAuthors === "string") {
+    try {
+      const parsed = JSON.parse(p.coAuthors);
+      coAuthorsList = Array.isArray(parsed) ? parsed : (p.coAuthors.trim() ? [p.coAuthors.trim()] : []);
+    } catch {
+      coAuthorsList = p.coAuthors.trim() ? [p.coAuthors.trim()] : [];
+    }
+  }
+
+  return {
+    ...p,
+    isPrivate: Boolean(p.isPrivate),
+    coAuthors: coAuthorsList
+  };
+}
+
 export default function App() {
   const [userSession, setUserSession] = useState<UserSession | null>(() => {
     try {
@@ -120,6 +141,10 @@ export default function App() {
       } else {
         const cached = localStorage.getItem("studio_buku_db_cache");
         data = cached ? JSON.parse(cached) : initialDefaultDb;
+      }
+
+      if (data && Array.isArray(data.projects)) {
+        data.projects = data.projects.map(normalizeProject);
       }
 
       setDb(data);
@@ -331,7 +356,20 @@ export default function App() {
     const authorEmail = userSession?.email || "";
 
     const isOwner = p.ownerId === authorId || p.ownerId === authorName || p.ownerId === authorEmail;
-    const isCoAuthor = (p.coAuthors || []).some(
+    
+    let coAuthorsList: string[] = [];
+    if (Array.isArray(p.coAuthors)) {
+      coAuthorsList = p.coAuthors;
+    } else if (typeof p.coAuthors === "string") {
+      try {
+        const parsed = JSON.parse(p.coAuthors);
+        coAuthorsList = Array.isArray(parsed) ? parsed : [p.coAuthors];
+      } catch {
+        coAuthorsList = [p.coAuthors];
+      }
+    }
+
+    const isCoAuthor = Array.isArray(coAuthorsList) && coAuthorsList.some(
       (ca) => ca === authorId || ca === authorName || ca === authorEmail
     );
     if (isOwner || isCoAuthor) return true;
