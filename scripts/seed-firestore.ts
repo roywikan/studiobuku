@@ -1,5 +1,5 @@
 import { Firestore } from '@google-cloud/firestore';
-import { INITIAL_SEED_DB } from '../src/seedData.js';
+import { INITIAL_SEED_DB } from '../src/seedData';
 import fs from 'fs';
 import path from 'path';
 

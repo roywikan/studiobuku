@@ -430,8 +430,15 @@ export default function App() {
   };
 
   const handleRunDatabaseBootstrap = async () => {
-    const res = await fetch("/api/db/bootstrap", { method: "POST" });
-    if (!res.ok) throw new Error("Gagal melakukan bootstrap database");
+    try {
+      console.log("[App] 🔄 Menjalankan bootstrap database & memuat ulang data naskah...");
+      const res = await fetch("/api/db/bootstrap", { method: "POST" });
+      if (!res.ok) {
+        console.warn(`[App] /api/db/bootstrap status ${res.status}`);
+      }
+    } catch (e) {
+      console.warn("[App] handleRunDatabaseBootstrap warning:", e);
+    }
     await loadData(selectedProjectId);
   };
 

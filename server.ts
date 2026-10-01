@@ -182,19 +182,49 @@ async function startServer() {
     res.json(db);
   });
 
-  // Automated DB Bootstrap Endpoint
-  app.post("/api/db/bootstrap", (req, res) => {
+  // Automated DB Bootstrap & Seed Endpoints
+  const handleDatabaseSeed = (req: express.Request, res: express.Response) => {
     try {
-      writeDb(initialDb);
+      console.log(`[Server Seed API] 📥 Received ${req.method} request on ${req.originalUrl || req.path}`);
+      
+      const body = req.body || {};
+      const hasPayload = body && Array.isArray(body.projects) && body.projects.length > 0;
+      
+      const targetDb: DB = hasPayload
+        ? {
+            projects: body.projects,
+            chapters: Array.isArray(body.chapters) ? body.chapters : INITIAL_SEED_DB.chapters,
+            authors: Array.isArray(body.authors) ? body.authors : INITIAL_SEED_DB.authors,
+            ideas: Array.isArray(body.ideas) ? body.ideas : INITIAL_SEED_DB.ideas,
+            logs: Array.isArray(body.logs) ? body.logs : INITIAL_SEED_DB.logs,
+            annotations: Array.isArray(body.annotations) ? body.annotations : [],
+            glossary: Array.isArray(body.glossary) ? body.glossary : INITIAL_SEED_DB.glossary,
+          }
+        : INITIAL_SEED_DB;
+
+      writeDb(targetDb);
+      console.log(`[Server Seed API] ✅ Berhasil menulis ${targetDb.projects.length} proyek dan ${targetDb.chapters.length} bab ke ${DB_FILE}`);
+
       res.json({
         success: true,
-        message: "Database Studio Buku D1 berhasil dibootstrap dengan skema tabel terbaru (isPrivate, ownerId, coAuthors) dan data seed 12+ karya naskah publik.",
-        db: initialDb
+        source: hasPayload ? "client_payload" : "server_seed_catalog",
+        message: `Database berhasil di-bootstrap dengan ${targetDb.projects.length} proyek naskah dan ${targetDb.chapters.length} bab!`,
+        totalProjects: targetDb.projects.length,
+        totalChapters: targetDb.chapters.length,
+        totalAuthors: targetDb.authors.length,
+        timestamp: new Date().toISOString()
       });
     } catch (err: any) {
-      res.status(500).json({ error: "Gagal melakukan bootstrap database: " + err?.message });
+      console.error("[Server Seed API] ❌ Gagal melakukan bootstrap database:", err);
+      res.status(500).json({
+        success: false,
+        error: "Gagal melakukan bootstrap database: " + (err?.message || "Internal error")
+      });
     }
-  });
+  };
+
+  app.all("/api/seed", handleDatabaseSeed);
+  app.all("/api/db/bootstrap", handleDatabaseSeed);
 
   // Public Projects API with Pagination
   app.get("/api/public/projects", (req, res) => {
@@ -218,21 +248,6 @@ async function startServer() {
       limit,
       totalPages
     });
-  });
-
-  // Web GUI Seed Endpoint: Allows seeding from browser or Cloudflare Pages without CLI / Wrangler
-  app.all("/api/seed", (req, res) => {
-    try {
-      writeDb(INITIAL_SEED_DB);
-      res.json({
-        success: true,
-        message: "Berhasil menginjeksi 60 proyek naskah dan 480 bab ke dalam database!",
-        totalProjects: INITIAL_SEED_DB.projects.length,
-        totalChapters: INITIAL_SEED_DB.chapters.length
-      });
-    } catch (err: any) {
-      res.status(500).json({ success: false, error: err?.message || "Error seeding database" });
-    }
   });
 
   // Projects CRUD
@@ -475,26 +490,6 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Automated DB Bootstrap Endpoint for D1 & Local Memory DB
-  app.post("/api/db/bootstrap", (req, res) => {
-    writeDb(INITIAL_SEED_DB);
-    res.json({
-      success: true,
-      message: "Database D1 & Local berhasil di-bootstrap dengan 60 proyek naskah publik.",
-      projectsCount: INITIAL_SEED_DB.projects.length,
-      chaptersCount: INITIAL_SEED_DB.chapters.length
-    });
-  });
-
-  app.get("/api/db/bootstrap", (req, res) => {
-    writeDb(INITIAL_SEED_DB);
-    res.json({
-      success: true,
-      message: "Database D1 & Local berhasil di-bootstrap dengan 60 proyek naskah publik.",
-      projectsCount: INITIAL_SEED_DB.projects.length,
-      chaptersCount: INITIAL_SEED_DB.chapters.length
-    });
-  });
   app.post("/api/import", (req, res) => {
     const db = readDb();
     const { projectId, text, authorName, splitBy } = req.body;
