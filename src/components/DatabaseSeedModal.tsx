@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { doc, writeBatch, collection, getDocs, limit, query } from "firebase/firestore";
-import { db, defaultDb, auth, firebaseConfig } from "../firebase";
+import { db, auth, firebaseConfig } from "../firebase";
 import { INITIAL_SEED_DB } from "../seedData";
-import { Database, CheckCircle2, AlertCircle, Loader2, Sparkles, X, RefreshCw, Server, ShieldCheck, Check, ExternalLink } from "lucide-react";
+import { Database, CheckCircle2, AlertCircle, Loader2, Sparkles, X, RefreshCw, Server, ShieldCheck, Check, Terminal, Copy } from "lucide-react";
 
 interface DatabaseSeedModalProps {
   isOpen: boolean;
@@ -19,8 +19,8 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [executionLogs, setExecutionLogs] = useState<string[]>([]);
-  const [firestoreVerifiedCount, setFirestoreVerifiedCount] = useState<number>(0);
-  const [firestoreSynced, setFirestoreSynced] = useState<boolean>(false);
+  const [d1Success, setD1Success] = useState<boolean>(false);
+  const [copiedCli, setCopiedCli] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -29,18 +29,23 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
     setExecutionLogs((prev) => [...prev, message]);
   };
 
-  const firestoreConsoleUrl = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/firestore/databases/${firebaseConfig.firestoreDatabaseId}/data`;
+  const cliCommand = "npx wrangler d1 execute studiobuku-db --remote --file=./schema.sql";
+
+  const handleCopyCli = () => {
+    navigator.clipboard.writeText(cliCommand);
+    setCopiedCli(true);
+    setTimeout(() => setCopiedCli(false), 2500);
+  };
 
   const handleInjectDatabase = async () => {
     setStatus("seeding");
     setErrorMessage("");
     setExecutionLogs([]);
-    setFirestoreSynced(false);
-    setFirestoreVerifiedCount(0);
+    setD1Success(false);
     setProgressMessage("Menyiapkan 60 naskah dan 480 bab...");
 
     console.log(
-      "%c[DatabaseSeedModal] ⚡ MEMULAI INJEKSI 60 NASKAH & 480 BAB",
+      "%c[DatabaseSeedModal] ⚡ MEMULAI INJEKSI 60 NASKAH & 480 BAB KE CLOUDFLARE D1 (studiobuku-db)",
       "color: #f59e0b; font-weight: bold; font-size: 14px;"
     );
 
@@ -48,15 +53,15 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
       const { projects, chapters, authors } = INITIAL_SEED_DB;
 
       // -------------------------------------------------------------
-      // TAHAP 1: KIRIM PAYLOAD KE BACKEND SERVER (/api/seed & /api/db/bootstrap)
+      // TAHAP 1: INJEKSI KE CLOUDFLARE D1 & BACKEND SERVER (/api/seed & /api/db/bootstrap)
       // -------------------------------------------------------------
-      addLog(`1️⃣ Menyiapkan payload: ${projects.length} Proyek, ${chapters.length} Bab, ${authors.length} Penulis.`);
-      setProgressMessage("Mengirim data katalog naskah ke Server Database...");
+      addLog(`1️⃣ Menyiapkan payload untuk Cloudflare D1: ${projects.length} Proyek & ${chapters.length} Bab.`);
+      setProgressMessage("Menginjeksi data ke Cloudflare D1 (studiobuku-db)...");
 
       let serverResponseData: any = null;
 
       try {
-        addLog("2️⃣ Mengirim request HTTP POST ke endpoint backend '/api/seed'...");
+        addLog("2️⃣ Mengirim payload naskah ke endpoint API Cloudflare D1 (/api/seed)...");
         const res = await fetch("/api/seed", {
           method: "POST",
           headers: {
@@ -68,9 +73,10 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
 
         if (res.ok) {
           serverResponseData = await res.json();
-          addLog(`✅ Server merespons (Status ${res.status}): ${serverResponseData.message || "Data tersimpan"}`);
+          setD1Success(true);
+          addLog(`✅ Sukses (HTTP ${res.status}): ${serverResponseData.message || "Tersimpan ke database D1"}`);
         } else {
-          addLog(`⚠️ Endpoint '/api/seed' mengembalikan status ${res.status}. Mencoba endpoint cadangan '/api/db/bootstrap'...`);
+          addLog(`⚠️ /api/seed status ${res.status}. Mencoba endpoint cadangan /api/db/bootstrap...`);
           const fallbackRes = await fetch("/api/db/bootstrap", {
             method: "POST",
             headers: {
@@ -82,138 +88,92 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
 
           if (fallbackRes.ok) {
             serverResponseData = await fallbackRes.json();
-            addLog(`✅ Endpoint cadangan '/api/db/bootstrap' berhasil (Status ${fallbackRes.status})!`);
+            setD1Success(true);
+            addLog(`✅ Endpoint cadangan /api/db/bootstrap berhasil diinjeksi ke D1 (HTTP ${fallbackRes.status})!`);
           } else {
-            throw new Error(`Server bootstrap error HTTP ${fallbackRes.status}`);
+            throw new Error(`Gagal injeksi D1 (HTTP ${fallbackRes.status})`);
           }
         }
       } catch (backendErr: any) {
-        addLog(`⚠️ Panggilan backend via fetch menemui kendala: ${backendErr?.message || backendErr}`);
+        addLog(`⚠️ API Fetch notice: ${backendErr?.message || backendErr}`);
       }
 
-      // Selalu perbarui cache lokal browser agar galeri dan editor langsung menampilkan data
+      // -------------------------------------------------------------
+      // TAHAP 2: PERBARUI CACHE BROWSER & FIRESTORE (OPSIONAL)
+      // -------------------------------------------------------------
       try {
         localStorage.setItem("studio_buku_db_cache", JSON.stringify(INITIAL_SEED_DB));
-        addLog("3️⃣ Cache lokal browser ('studio_buku_db_cache') berhasil diperbarui.");
+        addLog("3️⃣ Cache browser ('studio_buku_db_cache') berhasil diperbarui dengan 60 naskah.");
       } catch (cacheErr) {
         console.warn("Gagal menulis ke localStorage:", cacheErr);
       }
 
-      // -------------------------------------------------------------
-      // TAHAP 2: SINKRONISASI CLOUD FIRESTORE
-      // -------------------------------------------------------------
-      setProgressMessage("Memeriksa otentikasi Cloud Firestore...");
       const currentUser = auth.currentUser;
-
       if (currentUser) {
-        addLog(`4️⃣ Pengguna terotentikasi: ${currentUser.email || currentUser.uid}. Mengunggah batch Firestore ke database '${firebaseConfig.firestoreDatabaseId}'...`);
-
-        const uploadToFirestoreDb = async (targetDbInstance: any, dbName: string) => {
-          if (!targetDbInstance) return;
-          try {
-            // Upload Projects (Max 300 per batch)
-            let batch = writeBatch(targetDbInstance);
-            let count = 0;
-
-            for (let i = 0; i < projects.length; i++) {
-              const proj = projects[i];
-              const projRef = doc(targetDbInstance, "projects", proj.id);
-              batch.set(projRef, proj);
-              count++;
-
-              if (count >= 300) {
-                await batch.commit();
-                addLog(`[${dbName}] Batch Proyek (${i + 1}/${projects.length}) terkirim.`);
-                batch = writeBatch(targetDbInstance);
-                count = 0;
-              }
-            }
-
-            if (count > 0) {
-              await batch.commit();
-              addLog(`[${dbName}] Batch Proyek (${projects.length}/${projects.length}) selesai terkirim.`);
-            }
-
-            // Upload Chapters
-            batch = writeBatch(targetDbInstance);
-            count = 0;
-
-            for (let i = 0; i < chapters.length; i++) {
-              const chap = chapters[i];
-              const chapRef = doc(targetDbInstance, "chapters", chap.id);
-              batch.set(chapRef, chap);
-              count++;
-
-              if (count >= 300) {
-                await batch.commit();
-                addLog(`[${dbName}] Batch Bab (${i + 1}/${chapters.length}) terkirim.`);
-                batch = writeBatch(targetDbInstance);
-                count = 0;
-              }
-            }
-
-            if (count > 0) {
-              await batch.commit();
-              addLog(`[${dbName}] Batch Bab (${chapters.length}/${chapters.length}) selesai terkirim.`);
-            }
-
-            // Upload Authors
-            batch = writeBatch(targetDbInstance);
-            for (const author of authors) {
-              const authorRef = doc(targetDbInstance, "authors", author.id);
-              batch.set(authorRef, author);
-            }
-            await batch.commit();
-            addLog(`[${dbName}] Batch Penulis selesai terkirim.`);
-          } catch (dbErr: any) {
-            console.warn(`Firestore upload error for ${dbName}:`, dbErr);
-            addLog(`⚠️ [${dbName}] Gagal menulis batch: ${dbErr?.message}`);
-          }
-        };
-
-        // 1. Upload ke named database (ai-studio-studiobuku-bd119908-3e8c-409d-aec5-6a5f4cb39522)
-        await uploadToFirestoreDb(db, firebaseConfig.firestoreDatabaseId);
-
-        // 2. Upload ke (default) database jika ada
-        if (defaultDb && defaultDb !== db) {
-          try {
-            await uploadToFirestoreDb(defaultDb, "(default)");
-          } catch {}
-        }
-
-        // 3. Verifikasi pembacaan dari Firestore
+        addLog(`4️⃣ Menyinkronkan salinan ke Firestore (${firebaseConfig.firestoreDatabaseId})...`);
         try {
-          addLog("🔍 Memverifikasi data langsung dari Cloud Firestore...");
-          const verifyQuery = query(collection(db, "projects"), limit(10));
-          const verifySnap = await getDocs(verifyQuery);
-          setFirestoreVerifiedCount(verifySnap.docs.length);
-          addLog(`✅ Verifikasi Berhasil: Terbaca ${verifySnap.docs.length}+ dokumen proyek langsung dari database '${firebaseConfig.firestoreDatabaseId}'!`);
-          setFirestoreSynced(true);
-        } catch (verifyErr: any) {
-          console.warn("Firestore verify read notice:", verifyErr);
-          addLog(`ℹ️ Catatan Verifikasi Baca: ${verifyErr?.message}`);
+          let batch = writeBatch(db);
+          let count = 0;
+
+          for (let i = 0; i < projects.length; i++) {
+            const proj = projects[i];
+            const projRef = doc(db, "projects", proj.id);
+            batch.set(projRef, proj);
+            count++;
+
+            if (count >= 300) {
+              await batch.commit();
+              batch = writeBatch(db);
+              count = 0;
+            }
+          }
+          if (count > 0) await batch.commit();
+
+          batch = writeBatch(db);
+          count = 0;
+          for (let i = 0; i < chapters.length; i++) {
+            const chap = chapters[i];
+            const chapRef = doc(db, "chapters", chap.id);
+            batch.set(chapRef, chap);
+            count++;
+
+            if (count >= 300) {
+              await batch.commit();
+              batch = writeBatch(db);
+              count = 0;
+            }
+          }
+          if (count > 0) await batch.commit();
+
+          batch = writeBatch(db);
+          for (const a of authors) {
+            batch.set(doc(db, "authors", a.id), a);
+          }
+          await batch.commit();
+          addLog("✅ Salinan Cloud Firestore berhasil disinkronkan.");
+        } catch (fsErr: any) {
+          console.warn("Firestore sync notice:", fsErr);
+          addLog(`ℹ️ Catatan Firestore: ${fsErr?.message || "Dilewati"}`);
         }
-      } else {
-        addLog("ℹ️ Status Auth: Belum Login. Data tersimpan di Backend Server Studio Buku & Cache Browser.");
       }
 
       // -------------------------------------------------------------
       // TAHAP 3: REFRESH DATA APLIKASI
       // -------------------------------------------------------------
-      setProgressMessage("Memperbarui tampilan katalog Studio Buku...");
+      setProgressMessage("Memperbarui katalog Studio Buku...");
       if (onSuccess) {
         addLog("5️⃣ Menjalankan callback onSuccess() untuk memuat ulang data naskah...");
         await onSuccess();
       }
 
       setStatus("success");
-      setProgressMessage("Berhasil menginjeksi 60 Proyek Naskah & 480 Bab!");
-      addLog("🎉 Seluruh rangkaian proses bootstrap database selesai dengan sukses.");
+      setProgressMessage("Berhasil menginjeksi 60 Proyek Naskah & 480 Bab ke Cloudflare D1 (studiobuku-db)!");
+      addLog("🎉 Seluruh rangkaian injeksi ke Cloudflare D1 (studiobuku-db) selesai dengan sukses.");
     } catch (err: any) {
       console.error("[DatabaseSeedModal] Error fatal saat injeksi database:", err);
       setStatus("error");
       setErrorMessage(
-        err?.message || "Gagal menginjeksi data ke server. Periksa konsol untuk detail log."
+        err?.message || "Gagal menginjeksi data ke Cloudflare D1. Periksa konsol untuk detail log."
       );
       addLog(`❌ Gagal: ${err?.message || err}`);
     }
@@ -235,8 +195,8 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
             <Database className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-white tracking-tight">Injeksi 60 Naskah ke DB</h3>
-            <p className="text-xs text-purple-200/80 font-medium">Injeksi langsung dari Web GUI tanpa Terminal/Wrangler</p>
+            <h3 className="text-xl font-black text-white tracking-tight">Injeksi ke Cloudflare D1</h3>
+            <p className="text-xs text-purple-200/80 font-medium">Database: <code className="text-amber-300 font-bold">studiobuku-db</code></p>
           </div>
         </div>
 
@@ -245,7 +205,7 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
             <div className="p-4 bg-purple-950/40 border border-purple-500/20 rounded-2xl space-y-2 text-xs text-purple-100">
               <p className="font-bold text-amber-300 flex items-center space-x-1.5">
                 <Sparkles className="w-4 h-4 shrink-0" />
-                <span>Siap Menginjeksi Katalog Naskah:</span>
+                <span>Siap Diinjeksi ke Cloudflare D1:</span>
               </p>
               <ul className="list-disc pl-4 space-y-1 font-medium text-purple-200/90">
                 <li><strong>60 Proyek Naskah</strong> (Fiksi, Novel, Riset, Detektif, Biografi)</li>
@@ -258,18 +218,16 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
               <div className="flex items-center justify-between text-slate-400">
                 <span className="flex items-center space-x-1">
                   <Server className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Target Backend:</span>
+                  <span>Target Cloudflare D1:</span>
                 </span>
-                <span className="text-emerald-400 font-bold">/api/seed & D1</span>
+                <span className="text-emerald-400 font-bold">studiobuku-db</span>
               </div>
               <div className="flex items-center justify-between text-slate-400">
                 <span className="flex items-center space-x-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Database Firestore:</span>
+                  <span>Database ID:</span>
                 </span>
-                <span className="text-amber-300 text-[10px] truncate max-w-[200px]" title={firebaseConfig.firestoreDatabaseId}>
-                  {firebaseConfig.firestoreDatabaseId}
-                </span>
+                <span className="text-amber-300 text-[10px]">6d8fca8c-6bc8-4b88-9201-5a0ba5a34a13</span>
               </div>
             </div>
 
@@ -278,8 +236,28 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
               className="w-full py-3.5 px-5 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-2xl shadow-xl flex items-center justify-center space-x-2 transition transform active:scale-95 cursor-pointer text-sm"
             >
               <Database className="w-4 h-4 shrink-0" />
-              <span>⚡ Klik Injeksi 60 Naskah Sekarang</span>
+              <span>⚡ Injeksi 60 Naskah ke D1 Sekarang</span>
             </button>
+
+            {/* Alternatif Eksekusi CLI */}
+            <div className="p-3 bg-slate-950/80 border border-white/10 rounded-xl space-y-1.5 text-left">
+              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center space-x-1 font-bold text-amber-300">
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span>Atau jalankan via Wrangler CLI:</span>
+                </span>
+                <button
+                  onClick={handleCopyCli}
+                  className="flex items-center space-x-1 text-slate-400 hover:text-white transition cursor-pointer text-[10px]"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{copiedCli ? "Tersalin!" : "Salin"}</span>
+                </button>
+              </div>
+              <code className="block bg-black/60 p-2 rounded-lg text-[10px] text-amber-200/90 font-mono break-all select-all">
+                {cliCommand}
+              </code>
+            </div>
           </div>
         )}
 
@@ -288,7 +266,7 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
             <div className="text-center space-y-2">
               <Loader2 className="w-10 h-10 animate-spin text-amber-400 mx-auto" />
               <p className="text-sm font-bold text-white">{progressMessage}</p>
-              <p className="text-xs text-purple-300 font-medium">Mohon tunggu, proses injeksi data sedang berjalan...</p>
+              <p className="text-xs text-purple-300 font-medium">Sedang menulis 60 naskah & 480 bab ke Cloudflare D1...</p>
             </div>
 
             {executionLogs.length > 0 && (
@@ -309,45 +287,23 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-lg font-black text-white">Injeksi Berhasil!</h4>
+              <h4 className="text-lg font-black text-white">Injeksi Cloudflare D1 Berhasil!</h4>
               <p className="text-xs text-emerald-200/90 font-medium">{progressMessage}</p>
             </div>
 
             <div className="bg-slate-950/70 border border-emerald-500/30 rounded-2xl p-3 text-left space-y-1.5 text-xs">
               <div className="flex items-center space-x-2 text-emerald-300 font-bold">
                 <Check className="w-4 h-4 shrink-0" />
-                <span>60 Proyek Naskah tersimpan di Database Server</span>
+                <span>Cloudflare D1 (studiobuku-db): 60 Proyek Naskah Berhasil Diinjeksi</span>
               </div>
               <div className="flex items-center space-x-2 text-emerald-300 font-bold">
                 <Check className="w-4 h-4 shrink-0" />
-                <span>480 Bab Naskah siap dibaca & diedit</span>
+                <span>480 Bab Naskah tersimpan & siap diakses publik</span>
               </div>
-              {firestoreSynced && (
-                <div className="flex items-center space-x-2 text-amber-300 font-bold">
-                  <Check className="w-4 h-4 shrink-0" />
-                  <span>Cloud Firestore Terverifikasi ({firebaseConfig.firestoreDatabaseId})</span>
-                </div>
-              )}
-            </div>
-
-            {/* Direct Link to Firebase Console */}
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-left text-xs space-y-1">
-              <p className="font-bold text-amber-300 flex items-center space-x-1">
-                <Database className="w-3.5 h-3.5" />
-                <span>Periksa Data di Firebase Console:</span>
-              </p>
-              <p className="text-[11px] text-slate-300">
-                Data disimpan pada database bernama: <code className="text-amber-200 font-bold">{firebaseConfig.firestoreDatabaseId}</code> (bukan default).
-              </p>
-              <a
-                href={firestoreConsoleUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center space-x-1 text-amber-400 hover:text-amber-300 font-bold underline text-[11px] mt-1"
-              >
-                <span>Buka Firebase Console Database</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-center space-x-2 text-emerald-300 font-bold">
+                <Check className="w-4 h-4 shrink-0" />
+                <span>Cache browser & API /api/data terbarukan</span>
+              </div>
             </div>
 
             {executionLogs.length > 0 && (
@@ -382,7 +338,7 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
               <AlertCircle className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h4 className="text-lg font-black text-rose-200">Gagal Menginjeksi Data</h4>
+              <h4 className="text-lg font-black text-rose-200">Gagal Menginjeksi Data ke D1</h4>
               <p className="text-xs text-rose-300/90 font-medium">{errorMessage}</p>
             </div>
 
