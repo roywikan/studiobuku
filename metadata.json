@@ -1,6 +1,6 @@
 {
-  "name": "Penulis Buku",
-  "description": "Nulis Bareng - Platform kolaborasi menulis dua penulis (Co-Author) dengan struktur bab, papan gagasan, log revisi, impor teks, dan pratinjau buku.",
+  "name": "Studio Buku",
+  "description": "Nulis Bareng di Studio Buku - Platform kolaborasi menulis dua penulis (Co-Author) dengan struktur bab, papan gagasan, log revisi, impor teks, dan pratinjau buku.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
