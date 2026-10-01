@@ -11,6 +11,7 @@ import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
+import { DatabaseSeedModal } from "./components/DatabaseSeedModal";
 import { StudioBukuLogo } from "./components/StudioBukuLogo";
 import { INITIAL_SEED_DB } from "./seedData";
 import { LogIn, BookOpen } from "lucide-react";
@@ -69,6 +70,7 @@ export default function App() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSeedModalOpen, setIsSeedModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Global Auto-Save Status State for Navbar
@@ -635,6 +637,7 @@ export default function App() {
         onCreateProject={handleCreateProject}
         onUpdateProject={handleUpdateProject}
         onRunDatabaseBootstrap={handleRunDatabaseBootstrap}
+        onOpenSeedModal={() => setIsSeedModalOpen(true)}
         authors={db.authors}
         currentAuthor={currentAuthor}
         setCurrentAuthor={setCurrentAuthor}
@@ -726,6 +729,12 @@ export default function App() {
         isOpen={isInviteOpen}
         onClose={() => setIsInviteOpen(false)}
         projectName={project.title}
+      />
+
+      <DatabaseSeedModal
+        isOpen={isSeedModalOpen}
+        onClose={() => setIsSeedModalOpen(false)}
+        onSuccess={() => handleRunDatabaseBootstrap()}
       />
     </div>
   );

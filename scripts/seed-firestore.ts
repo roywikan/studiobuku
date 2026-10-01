@@ -1,5 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, writeBatch } from 'firebase/firestore';
+import { Firestore } from '@google-cloud/firestore';
 import { INITIAL_SEED_DB } from '../src/seedData.js';
 import fs from 'fs';
 import path from 'path';
@@ -12,28 +11,31 @@ if (!fs.existsSync(configPath)) {
 
 const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-
 async function seedFirestore() {
-  console.log(`Starting Firestore Seeding to Database ID: ${firebaseConfig.firestoreDatabaseId}...`);
+  console.log(`Starting Firestore Seeding to Project: ${firebaseConfig.projectId}, Database: ${firebaseConfig.firestoreDatabaseId}...`);
   console.log(`Uploading ${INITIAL_SEED_DB.projects.length} projects and ${INITIAL_SEED_DB.chapters.length} chapters...`);
+
+  // Initialize Admin Firestore using project credentials
+  const db = new Firestore({
+    projectId: firebaseConfig.projectId,
+    databaseId: firebaseConfig.firestoreDatabaseId
+  });
 
   const { projects, chapters, authors } = INITIAL_SEED_DB;
 
   // 1. Upload Projects in batches
-  let batch = writeBatch(db);
+  let batch = db.batch();
   let operationCount = 0;
 
   for (const project of projects) {
-    const projRef = doc(db, 'projects', project.id);
+    const projRef = db.collection('projects').doc(project.id);
     batch.set(projRef, project);
     operationCount++;
 
     if (operationCount >= 400) {
       await batch.commit();
       console.log(`Committed batch of ${operationCount} projects...`);
-      batch = writeBatch(db);
+      batch = db.batch();
       operationCount = 0;
     }
   }
@@ -44,18 +46,18 @@ async function seedFirestore() {
   }
 
   // 2. Upload Chapters in batches
-  batch = writeBatch(db);
+  batch = db.batch();
   operationCount = 0;
 
   for (const chapter of chapters) {
-    const chapRef = doc(db, 'chapters', chapter.id);
+    const chapRef = db.collection('chapters').doc(chapter.id);
     batch.set(chapRef, chapter);
     operationCount++;
 
     if (operationCount >= 400) {
       await batch.commit();
       console.log(`Committed batch of ${operationCount} chapters...`);
-      batch = writeBatch(db);
+      batch = db.batch();
       operationCount = 0;
     }
   }
@@ -66,9 +68,9 @@ async function seedFirestore() {
   }
 
   // 3. Upload Authors
-  batch = writeBatch(db);
+  batch = db.batch();
   for (const author of authors) {
-    const authorRef = doc(db, 'authors', author.id);
+    const authorRef = db.collection('authors').doc(author.id);
     batch.set(authorRef, author);
   }
   await batch.commit();

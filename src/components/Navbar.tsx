@@ -3,7 +3,7 @@ import { Author, Project } from "../types";
 import { WriterTheme, WRITER_THEMES } from "../theme";
 import { StudioBukuLogo } from "./StudioBukuLogo";
 import { ProjectSettingsModal } from "./ProjectSettingsModal";
-import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, Lock, Globe, Settings, LayoutGrid } from "lucide-react";
+import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, Lock, Globe, Settings, LayoutGrid, Database } from "lucide-react";
 
 interface NavbarProps {
   activeTab: "editor" | "ideas" | "logs" | "preview" | "ai" | "gallery";
@@ -14,6 +14,7 @@ interface NavbarProps {
   onCreateProject?: (proj: { title: string; subtitle: string; genre: string; synopsis: string; isPrivate?: boolean }) => void;
   onUpdateProject?: (updated: Partial<Project>) => Promise<void> | void;
   onRunDatabaseBootstrap?: () => Promise<void>;
+  onOpenSeedModal?: () => void;
   authors: Author[];
   currentAuthor: Author;
   setCurrentAuthor: (author: Author) => void;
@@ -36,6 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onCreateProject,
   onUpdateProject,
   onRunDatabaseBootstrap,
+  onOpenSeedModal,
   authors,
   currentAuthor,
   setCurrentAuthor,
@@ -202,17 +204,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                       })}
                     </div>
 
-                    <div className="pt-2 border-t border-slate-800 mt-2">
+                    <div className="pt-2 border-t border-slate-800 mt-2 space-y-1.5">
                       <button
                         onClick={() => {
                           setIsNewProjectModalOpen(true);
                           setIsProjectDropdownOpen(false);
                         }}
-                        className="w-full flex items-center justify-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black py-2 rounded-xl transition shadow-md"
+                        className="w-full flex items-center justify-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black py-2 rounded-xl transition shadow-md cursor-pointer"
                       >
-                        <FolderPlus className="w-4 h-4 text-slate-950" />
+                        <FolderPlus className="w-4 h-4 text-slate-950 shrink-0" />
                         <span>+ Buat Proyek Buku Baru</span>
                       </button>
+
+                      {onOpenSeedModal && (
+                        <button
+                          onClick={() => {
+                            onOpenSeedModal();
+                            setIsProjectDropdownOpen(false);
+                          }}
+                          className="w-full flex items-center justify-center space-x-1.5 bg-purple-950/80 hover:bg-purple-900 text-amber-300 text-xs font-bold py-2 rounded-xl transition border border-purple-500/40 shadow-sm cursor-pointer"
+                        >
+                          <Database className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>⚡ Injeksi 60 Naskah ke DB</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </>

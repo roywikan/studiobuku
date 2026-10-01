@@ -220,6 +220,21 @@ async function startServer() {
     });
   });
 
+  // Web GUI Seed Endpoint: Allows seeding from browser or Cloudflare Pages without CLI / Wrangler
+  app.all("/api/seed", (req, res) => {
+    try {
+      writeDb(INITIAL_SEED_DB);
+      res.json({
+        success: true,
+        message: "Berhasil menginjeksi 60 proyek naskah dan 480 bab ke dalam database!",
+        totalProjects: INITIAL_SEED_DB.projects.length,
+        totalChapters: INITIAL_SEED_DB.chapters.length
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err?.message || "Error seeding database" });
+    }
+  });
+
   // Projects CRUD
   app.post("/api/projects", (req, res) => {
     const db = readDb();
