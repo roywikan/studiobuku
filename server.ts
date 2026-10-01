@@ -2078,6 +2078,9 @@ Sitemap: https://studio.buku.biz.id/sitemap.xml
     app.use(express.static(path.join(process.cwd(), "dist")));
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api/")) return next();
+      if (req.path.startsWith("/assets/") || /\.(js|mjs|css|json|png|jpg|jpeg|svg|webp|woff2?|ico)$/i.test(req.path)) {
+        return res.status(404).type("text/plain").send("Not Found");
+      }
       res.sendFile(path.join(process.cwd(), "dist", "index.html"));
     });
   } else {
