@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Projects Collection (Public read for published projects, write for signed-in authors)
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Chapters Collection (Public read, write for signed-in authors)
+    match /chapters/{chapterId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // Ideas Collection
+    match /ideas/{ideaId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // Revision Logs Collection
+    match /logs/{logId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // Glossary Collection
+    match /glossary/{termId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+  }
+}

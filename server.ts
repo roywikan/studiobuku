@@ -108,6 +108,11 @@ function readDb(): DB {
 
       // Migrate / Normalize schema for isPrivate, ownerId, ownerName, coAuthors
       if (parsed.projects && Array.isArray(parsed.projects)) {
+        if (parsed.projects.length < 50) {
+          writeDb(initialDb);
+          return initialDb;
+        }
+
         parsed.projects = parsed.projects.map((p: any) => ({
           ...p,
           isPrivate: typeof p.isPrivate === "boolean" ? p.isPrivate : false,
@@ -1116,17 +1121,55 @@ async function startServer() {
     `;
   }
 
-  function renderFrontpageServerHtml(db: DB): string {
-    const publicProjects = (db.projects || []).filter(p => !p.isPrivate);
+  function sanitizeManuscriptExcerpt(rawText: string, maxChars: number): string {
+    if (!rawText || !rawText.trim()) return "Kisah dan narasi bermakna terukir indah dalam setiap bab naskah ini.";
 
-    const jsonLdItems = publicProjects.map((p, index) => {
+    // 1. Remove [[ HEADER ]] tags, --- Author Notes ---, HTML tags, and Markdown symbols
+    let cleaned = rawText
+      .replace(/\[\[[\s\S]*?\]\]/g, "")
+      .replace(/---[\s\S]*?$/g, "")
+      .replace(/<[^>]*>?/gm, "")
+      .replace(/[*_~`#]/g, "");
+
+    // 2. Strip unwanted non-alphanumeric artifacts except standard Indonesian punctuation
+    cleaned = cleaned
+      .replace(/[^\w\s\d.,!?'"\-—–“”‘’()]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!cleaned) return "Kisah dan narasi bermakna terukir indah dalam setiap bab naskah ini.";
+
+    if (cleaned.length <= maxChars) {
+      return cleaned;
+    }
+
+    // Trim at word boundary
+    let truncated = cleaned.substring(0, maxChars);
+    const lastSpace = truncated.lastIndexOf(" ");
+    if (lastSpace > maxChars * 0.7) {
+      truncated = truncated.substring(0, lastSpace);
+    }
+    return truncated.trim() + "...";
+  }
+
+  function renderFrontpageServerHtml(db: DB, pageNum: number = 1): string {
+    const publicProjects = (db.projects || []).filter(p => !p.isPrivate);
+    const limit = 12;
+    const totalProjects = publicProjects.length;
+    const totalPages = Math.max(1, Math.ceil(totalProjects / limit));
+    const validPage = Math.min(Math.max(1, pageNum), totalPages);
+    const startIndex = (validPage - 1) * limit;
+
+    const paginatedProjects = publicProjects.slice(startIndex, startIndex + limit);
+
+    const jsonLdItems = paginatedProjects.map((p, index) => {
       const projSlug = slugify(p.title);
       const pChapters = (db.chapters || []).filter(c => c.projectId === p.id);
       const wordCount = pChapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).length : 0), 0);
 
       return {
         "@type": "ListItem",
-        "position": index + 1,
+        "position": startIndex + index + 1,
         "item": {
           "@type": "Book",
           "@id": `https://studio.buku.biz.id/p/${projSlug}`,
@@ -1156,7 +1199,7 @@ async function startServer() {
       "@type": "CollectionPage",
       "name": "Studio Buku - Galeri Naskah & Karya Kolaboratif",
       "description": "Platform penulisan & penerbitan naskah kolaboratif. Akses galeri naskah publik, novel, dan jurnal akademis karya penulis Indonesia secara gratis.",
-      "url": "https://studio.buku.biz.id",
+      "url": `https://studio.buku.biz.id${validPage > 1 ? `/?page=${validPage}` : ''}`,
       "publisher": {
         "@type": "Organization",
         "name": "Studio Buku",
@@ -1165,53 +1208,211 @@ async function startServer() {
       },
       "mainEntity": {
         "@type": "ItemList",
-        "numberOfItems": publicProjects.length,
+        "numberOfItems": paginatedProjects.length,
         "itemListElement": jsonLdItems
       }
     };
 
-    const projectCardsHtml = publicProjects.map(p => {
+    const bentoCardStyles = [
+      {
+        cardBg: "background: linear-gradient(135deg, #0D9488 0%, #0077B6 50%, #03045E 100%); color: #ffffff; border: 1px solid rgba(94, 234, 212, 0.4);",
+        titleColor: "#ffffff",
+        subColor: "rgba(204, 251, 241, 0.9)",
+        synopsisColor: "rgba(255, 255, 255, 0.8)",
+        metaColor: "rgba(253, 230, 138, 0.95)",
+        btnStyle: "background: #fbbf24; color: #020617; font-weight: 900; border-radius: 9999px;"
+      },
+      {
+        cardBg: "background: linear-gradient(135deg, #FFB300 0%, #F57C00 50%, #E65100 100%); color: #020617; border: 1px solid rgba(251, 191, 36, 0.6);",
+        titleColor: "#020617",
+        subColor: "rgba(2, 6, 23, 0.9)",
+        synopsisColor: "rgba(2, 6, 23, 0.85)",
+        metaColor: "#020617",
+        btnStyle: "background: #020617; color: #fcd34d; font-weight: 900; border-radius: 9999px;"
+      },
+      {
+        cardBg: "background: linear-gradient(135deg, #D81B60 0%, #C2185B 50%, #880E4F 100%); color: #ffffff; border: 1px solid rgba(244, 114, 182, 0.4);",
+        titleColor: "#ffffff",
+        subColor: "rgba(252, 231, 243, 0.9)",
+        synopsisColor: "rgba(255, 255, 255, 0.75)",
+        metaColor: "rgba(253, 230, 138, 0.95)",
+        btnStyle: "background: #fbbf24; color: #020617; font-weight: 900; border-radius: 9999px;"
+      },
+      {
+        cardBg: "background: linear-gradient(135deg, #7E22CE 0%, #4A148C 50%, #280659 100%); color: #ffffff; border: 1px solid rgba(192, 132, 252, 0.4);",
+        titleColor: "#ffffff",
+        subColor: "rgba(233, 213, 255, 0.9)",
+        synopsisColor: "rgba(255, 255, 255, 0.75)",
+        metaColor: "rgba(251, 207, 232, 0.95)",
+        btnStyle: "background: #ec4899; color: #ffffff; font-weight: 900; border-radius: 9999px;"
+      },
+      {
+        cardBg: "background: linear-gradient(135deg, #1E88E5 0%, #1565C0 50%, #0D47A1 100%); color: #ffffff; border: 1px solid rgba(96, 165, 250, 0.4);",
+        titleColor: "#ffffff",
+        subColor: "rgba(219, 234, 254, 0.9)",
+        synopsisColor: "rgba(255, 255, 255, 0.75)",
+        metaColor: "rgba(253, 230, 138, 0.95)",
+        btnStyle: "background: #fbbf24; color: #020617; font-weight: 900; border-radius: 9999px;"
+      },
+      {
+        cardBg: "background: linear-gradient(135deg, #FFF9C4 0%, #FFF176 50%, #FBC02D 100%); color: #0f172a; border: 1px solid #fcd34d;",
+        titleColor: "#0f172a",
+        subColor: "rgba(15, 23, 42, 0.9)",
+        synopsisColor: "rgba(15, 23, 42, 0.85)",
+        metaColor: "#0f172a",
+        btnStyle: "background: #280540; color: #fcd34d; font-weight: 900; border-radius: 9999px;"
+      }
+    ];
+
+    const getCardSpanClassSsr = (index: number) => {
+      if (index === 0) return "md:col-span-2 lg:col-span-2 md:row-span-2";
+      if (index === 3) return "md:col-span-2 lg:col-span-2";
+      if (index === 8) return "md:col-span-2 lg:col-span-2";
+      return "col-span-1";
+    };
+
+    const projectCardsHtml = paginatedProjects.map((p, idx) => {
       const projSlug = slugify(p.title);
       const pChapters = (db.chapters || []).filter(c => c.projectId === p.id);
       const totalWords = pChapters.reduce((sum, c) => sum + (c.content ? c.content.split(/\s+/).length : 0), 0);
       const authorName = p.ownerName || "Penulis Studio";
+      const theme = bentoCardStyles[idx % bentoCardStyles.length];
+      const spanClass = getCardSpanClassSsr(idx);
+
+      const isFeaturedCard = idx === 0;
+      const isWideCard = idx === 3 || idx === 8;
+
+      const titleFontSizeClass = isFeaturedCard
+        ? "text-2xl md:text-3xl font-extrabold"
+        : isWideCard
+        ? "text-lg sm:text-xl font-bold"
+        : "text-base sm:text-lg font-bold";
+
+      const excerptFontSizeClass = isFeaturedCard
+        ? "text-sm md:text-base leading-relaxed"
+        : isWideCard
+        ? "text-xs sm:text-sm leading-relaxed"
+        : "text-xs leading-relaxed";
+
+      const subtitleFontSizeClass = isFeaturedCard
+        ? "text-xs sm:text-sm"
+        : "text-xs";
+
+      const coverSeedUrl = `https://picsum.photos/seed/buku-${p.id}/400/600`;
+      const initials = (authorName || "PS")
+        .trim()
+        .split(/\s+/)
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
+
+      const maxExcerptChars = isFeaturedCard ? 360 : isWideCard ? 200 : 110;
+      const rawExcerptSource = pChapters[0]?.content || p.synopsis || "";
+      const manuscriptExcerpt = sanitizeManuscriptExcerpt(rawExcerptSource, maxExcerptChars);
+
+      const avatarColors = [
+        "background: #fbbf24; color: #020617;",
+        "background: #ec4899; color: #ffffff;",
+        "background: #3b82f6; color: #ffffff;",
+        "background: #34d399; color: #020617;",
+        "background: #c084fc; color: #020617;",
+        "background: #fb7185; color: #020617;"
+      ];
+      const avatarStyle = avatarColors[idx % avatarColors.length];
 
       return `
-        <article class="bg-white border border-slate-200 hover:border-amber-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between" id="card-${p.id}">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <span class="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+        <article class="${spanClass} rounded-3xl overflow-hidden shadow-2xl transition flex flex-col sm:flex-row border border-white/10" id="card-${p.id}" style="${theme.cardBg}">
+          <!-- Side Book Cover Strip (~38% Width) -->
+          <div class="relative w-full sm:w-[38%] shrink-0 min-h-[170px] sm:min-h-full overflow-hidden bg-slate-950">
+            <img src="${coverSeedUrl}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover opacity-85" loading="lazy" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/20"></div>
+            
+            <!-- GLASSMORPHISM GENRE BADGE -->
+            <div class="absolute top-3 left-3">
+              <span class="bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-300/40 shadow-xl">
                 ${escapeHtml(p.genre || "Fiksi")}
               </span>
-              <span class="text-[11px] text-slate-500 font-semibold flex items-center space-x-1">
-                <span>✍️ ${escapeHtml(authorName)}</span>
-              </span>
             </div>
 
-            <h2 class="text-lg font-bold text-slate-900 hover:text-amber-600 transition leading-snug">
-              <a href="/p/${projSlug}">${escapeHtml(p.title)}</a>
-            </h2>
-
-            ${p.subtitle ? `<p class="text-xs text-slate-500 font-serif italic">${escapeHtml(p.subtitle)}</p>` : ''}
-
-            <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
-              ${escapeHtml(p.synopsis)}
-            </p>
+            <div class="absolute bottom-3 left-3 text-[10px] font-bold text-white/90 flex items-center space-x-1">
+              <span>📚 Studio Buku</span>
+            </div>
           </div>
 
-          <div class="pt-4 border-t border-slate-100 space-y-3">
-            <div class="flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-              <span>📖 ${pChapters.length} Bab Terbit</span>
-              <span>📝 ${totalWords.toLocaleString('id-ID')} Kata</span>
+          <!-- Content Panel -->
+          <div class="p-6 space-y-3.5 flex-1 flex flex-col justify-between">
+            <div class="space-y-2">
+              <!-- Author Branding -->
+              <div class="flex items-center space-x-2 mb-1">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm shrink-0" style="${avatarStyle}">
+                  ${initials}
+                </div>
+                <span class="text-xs font-bold truncate" style="color: ${theme.titleColor};">${escapeHtml(authorName)}</span>
+                <span class="text-xs shrink-0" title="Penulis Studio Buku">✍️</span>
+              </div>
+
+              <!-- Title with Dynamic Font Scaling -->
+              <h2 class="${titleFontSizeClass} leading-snug tracking-tight">
+                <a href="/p/${projSlug}" style="color: ${theme.titleColor}; text-decoration: none;">${escapeHtml(p.title)}</a>
+              </h2>
+
+              ${p.subtitle ? `<p class="${subtitleFontSizeClass} font-serif italic line-clamp-1" style="color: ${theme.subColor};">${escapeHtml(p.subtitle)}</p>` : ''}
+
+              <!-- Editorial Text Excerpt in Quotation Marks -->
+              <blockquote class="${excerptFontSizeClass} font-serif italic pl-2.5 my-1.5" style="border-left: 2px solid rgba(251, 191, 36, 0.6); color: ${theme.synopsisColor};">
+                “${escapeHtml(manuscriptExcerpt)}”
+              </blockquote>
             </div>
 
-            <a href="/p/${projSlug}" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow-sm text-center text-decoration-none">
-              <span>📖 Baca Naskah Lengkap</span>
-            </a>
+            <!-- Metadata & Pill Button -->
+            <div class="pt-3 border-t border-black/10 sm:border-white/15 space-y-3 mt-3">
+              <div class="flex items-center justify-between text-[11px] font-bold" style="color: ${theme.metaColor};">
+                <span>${pChapters.length} Bab Terbit</span>
+                <span aria-hidden="true">·</span>
+                <span>${totalWords.toLocaleString('id-ID')} Kata</span>
+              </div>
+
+              <a href="/p/${projSlug}" class="w-full py-2.5 px-4 text-xs flex items-center justify-center space-x-2 transition text-center text-decoration-none shadow-lg font-black" style="${theme.btnStyle}">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <span>Baca Naskah</span>
+              </a>
+            </div>
           </div>
         </article>
       `;
     }).join("\n");
+
+    const prevPageHref = validPage > 2 ? `/?page=${validPage - 1}` : "/";
+    const nextPageHref = `/?page=${Math.min(totalPages, validPage + 1)}`;
+
+    const pageNumbersHtml = Array.from({ length: totalPages }, (_, i) => i + 1).map(pNum => {
+      const href = pNum === 1 ? "/" : `/?page=${pNum}`;
+      const isActive = pNum === validPage;
+      return `<a href="${href}" class="px-4 py-2 rounded-2xl text-xs font-black transition ${isActive ? 'bg-amber-400 text-slate-950 shadow-lg' : 'bg-[#180228] text-purple-200 hover:bg-purple-800/60 border border-purple-600/40'}">${pNum}</a>`;
+    }).join(" ");
+
+    const paginationNavHtml = `
+      <nav aria-label="Paginasi Naskah" class="bg-[#290542] border border-purple-600/40 rounded-3xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-xs text-purple-200/90 font-medium">
+          Menampilkan <span class="font-bold text-amber-300">${startIndex + 1}</span> - <span class="font-bold text-amber-300">${Math.min(startIndex + limit, totalProjects)}</span> dari <span class="font-bold text-amber-300">${totalProjects}</span> Naskah Terpublikasi
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <!-- Panah Ke Kiri (Left Arrow) -->
+          <a href="${prevPageHref}" className="p-2.5 rounded-2xl border border-purple-600/50 bg-[#180228] text-purple-100 hover:bg-purple-800/60 transition ${validPage === 1 ? 'opacity-40 pointer-events-none' : ''}" aria-label="Halaman Sebelumnya" style="padding: 8px 14px; font-weight: bold; border-radius: 16px; border: 1px solid rgba(147, 51, 234, 0.4); background: #180228; color: #f3e8ff; text-decoration: none;">
+            &larr;
+          </a>
+
+          <!-- Angka Angka Paginasi -->
+          ${pageNumbersHtml}
+
+          <!-- Panah Ke Kanan (Right Arrow) -->
+          <a href="${nextPageHref}" className="p-2.5 rounded-2xl border border-purple-600/50 bg-[#180228] text-purple-100 hover:bg-purple-800/60 transition ${validPage === totalPages ? 'opacity-40 pointer-events-none' : ''}" aria-label="Halaman Selanjutnya" style="padding: 8px 14px; font-weight: bold; border-radius: 16px; border: 1px solid rgba(147, 51, 234, 0.4); background: #180228; color: #f3e8ff; text-decoration: none;">
+            &rarr;
+          </a>
+        </div>
+      </nav>
+    `;
 
     return `<!doctype html>
 <html lang="id">
@@ -1219,22 +1420,19 @@ async function startServer() {
     <script>window.__DEFINES__ = window.__DEFINES__ || {};</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Studio Buku – Galeri Naskah & Karya Kolaboratif</title>
-    <meta name="description" content="Studio Buku (studio.buku.biz.id): Platform penulisan dan penerbitan naskah kolaboratif. Jelajahi puluhan naskah novel, jurnal akademis, dan fiksi/non-fiksi karya penulis Indonesia." />
-    
+    <title>Studio Buku – Galeri Naskah & Karya Kolaboratif ${validPage > 1 ? `(Halaman ${validPage})` : ''}</title>
+    <meta name="description" content="Studio Buku: Platform penulisan dan penerbitan naskah kolaboratif. Jelajahi puluhan naskah novel, jurnal akademis, dan fiksi/non-fiksi karya penulis Indonesia." />
+    <link rel="canonical" href="https://studio.buku.biz.id${validPage > 1 ? `/?page=${validPage}` : ''}" />
+    ${validPage > 1 ? `<link rel="prev" href="https://studio.buku.biz.id${validPage === 2 ? '' : `/?page=${validPage - 1}`}" />` : ''}
+    ${validPage < totalPages ? `<link rel="next" href="https://studio.buku.biz.id/?page=${validPage + 1}" />` : ''}
+
     <!-- OpenGraph Tags -->
     <meta property="og:title" content="Studio Buku – Galeri Naskah & Karya Kolaboratif" />
     <meta property="og:description" content="Jelajahi puluhan naskah novel, jurnal akademis, dan karya fiksi/non-fiksi terpublikasi karya para penulis di Studio Buku." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://studio.buku.biz.id" />
+    <meta property="og:url" content="https://studio.buku.biz.id${validPage > 1 ? `/?page=${validPage}` : ''}" />
     <meta property="og:site_name" content="Studio Buku" />
     <meta property="og:image" content="https://studio.buku.biz.id/studio-buku-logo.jpg" />
-
-    <!-- Twitter Cards -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Studio Buku – Galeri Naskah & Karya Kolaboratif" />
-    <meta name="twitter:description" content="Platform penulisan naskah kolaboratif. Dapatkan akses ke galeri naskah publik gratis karya para penulis lokal Indonesia." />
-    <meta name="twitter:image" content="https://studio.buku.biz.id/studio-buku-logo.jpg" />
 
     <!-- Schema.org JSON-LD Structured Data for Googlebot -->
     <script type="application/ld+json">
@@ -1244,49 +1442,68 @@ async function startServer() {
     <!-- Tailwind CSS Standard CDN for Pre-rendered HTML SSR -->
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="bg-slate-50 text-slate-900 font-sans">
+  <body class="bg-[#1f0330] text-slate-100 font-sans">
     <div id="root">
-      <div class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+      <div class="min-h-screen bg-[#1f0330] text-slate-100 flex flex-col font-sans">
         <!-- HEADER -->
-        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+        <header class="sticky top-0 z-40 bg-[#160226]/85 backdrop-blur-md border-b border-purple-800/40 px-4 sm:px-8 py-3.5 shadow-2xl">
           <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <a href="/" class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
-              Studio Buku
+            <a href="/" class="flex items-center space-x-2.5 text-xl sm:text-2xl font-black text-white tracking-tight hover:opacity-90 transition">
+              <img src="/studio-buku-logo-box-100.jpg" alt="Studio Buku" class="w-9 h-9 rounded-xl object-cover border border-amber-400" onError="this.style.display='none'" />
+              <span>Studio Buku</span>
             </a>
             <div class="flex items-center space-x-3">
-              <button class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm">
-                Login
+              <button class="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-500/20">
+                Masuk Penulis
               </button>
             </div>
           </div>
         </header>
 
         <!-- MAIN BODY -->
-        <main class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-8">
-          <!-- HERO BANNER -->
-          <section class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
-            <div class="inline-flex items-center space-x-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1 rounded-full text-xs font-bold">
-              <span>📚 Platform Kolaborasi Penulisan Naskah Buku untuk Co-authorship</span>
-            </div>
-            <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Ruang Kerja Penulis & Galeri Naskah Terbuka
-            </h1>
-            <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl font-medium">
-              Selamat datang di Studio Buku (studio.buku.biz.id) — wadah penerbitan & penulisan naskah kolaboratif. Jelajahi puluhan karya novel, jurnal akademis, dan karya fiksi/non-fiksi karya para penulis Indonesia.
-            </p>
-          </section>
-
-          <!-- CARDS GRID FOR GOOGLEBOT INDEXING -->
+        <main class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
+          <!-- CARDS BENTO GRID WITH INTEGRATED HERO CARD & DENSE AUTO-PACKING -->
           <section class="space-y-6">
             <div class="flex items-center justify-between">
-              <h2 class="text-xl font-black text-slate-900 flex items-center space-x-2">
-                <span>📚 Naskah Terbaru (${publicProjects.length} Naskah Terpublikasi)</span>
+              <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Naskah Terbaru :
               </h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 grid-flow-dense auto-rows-fr">
+              ${validPage === 1 ? `
+                <!-- INTEGRATED FEATURED HERO CARD (CARD #0) ON PAGE 1 -->
+                <div class="md:col-span-2 lg:col-span-2 bg-gradient-to-r from-[#3b0854] via-[#2d0542] to-[#1e022b] border border-purple-500/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-4 shadow-2xl relative overflow-hidden">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="bg-pink-600/30 border border-pink-400/40 text-pink-200 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center space-x-1.5">
+                      <span>PROGRAM PENULISAN & CO-AUTHORSHIP</span>
+                    </span>
+                    <span class="bg-amber-400/20 border border-amber-400/40 text-amber-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      ${totalProjects} NASKAH TERPUBLIKASI
+                    </span>
+                  </div>
+
+                  <div class="space-y-2">
+                    <h1 class="text-xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                      Katalog Naskah, Ruang Kerja Penulis & Galeri Karya Terbuka
+                    </h1>
+                    <p class="text-purple-200/90 text-xs sm:text-sm leading-relaxed font-medium">
+                      Selamat datang di Studio Buku — wadah penulisan dan penerbitan naskah kolaboratif.
+                    </p>
+                  </div>
+
+                  <div class="pt-3 border-t border-purple-500/20 flex items-center justify-between text-xs text-purple-300 font-bold">
+                    <span>Co-Authorship Penulisan Buku</span>
+                    <span class="text-amber-400 font-black">Studio Buku • 2026</span>
+                  </div>
+                </div>
+              ` : ''}
+
               ${projectCardsHtml}
             </div>
+
+            <!-- Crawlable Pagination Links for Search Crawlers -->
+            ${paginationNavHtml}
           </section>
         </main>
 
@@ -1318,7 +1535,8 @@ async function startServer() {
     // If request asks for html
     if (req.headers.accept?.includes("text/html") || req.headers.accept === "*/*" || !req.headers.accept) {
       const db = readDb();
-      let html = renderFrontpageServerHtml(db);
+      const pageNum = parseInt(req.query.page as string, 10) || 1;
+      let html = renderFrontpageServerHtml(db, pageNum);
       if (vite) {
         try {
           html = await vite.transformIndexHtml(req.url, html);
@@ -1491,8 +1709,14 @@ async function startServer() {
       const baseUrl = "https://studio.buku.biz.id";
       const publicProjects = (db.projects || []).filter(p => !p.isPrivate);
 
+      const totalPages = Math.max(1, Math.ceil(publicProjects.length / 12));
       const staticPages = [
         { url: `${baseUrl}/`, priority: "1.0", changefreq: "daily" },
+        ...Array.from({ length: totalPages - 1 }, (_, i) => ({
+          url: `${baseUrl}/?page=${i + 2}`,
+          priority: "0.9",
+          changefreq: "daily"
+        })),
         { url: `${baseUrl}/pricing`, priority: "0.8", changefreq: "weekly" },
         { url: `${baseUrl}/terms`, priority: "0.5", changefreq: "monthly" },
         { url: `${baseUrl}/privacy`, priority: "0.5", changefreq: "monthly" },

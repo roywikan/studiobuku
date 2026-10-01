@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Naskah/Buku kolaboratif di Studio Buku",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "subtitle": { "type": "string", "maxLength": 300 },
+        "genre": { "type": "string", "maxLength": 100 },
+        "synopsis": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isPrivate": { "type": "boolean" },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "ownerName": { "type": "string", "maxLength": 150 },
+        "coAuthors": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["title", "genre", "synopsis", "createdAt", "ownerId", "ownerName"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Bab naskah dalam proyek buku",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "subtitle": { "type": "string", "maxLength": 300 },
+        "content": { "type": "string" },
+        "order": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "review", "final"] },
+        "lastEditedBy": { "type": "string", "maxLength": 150 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "title", "content", "order", "status", "updatedAt"]
+    },
+    "Idea": {
+      "title": "Idea",
+      "description": "Papan ide dan inspirasi naskah",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 1000 },
+        "category": { "type": "string", "enum": ["Plot", "Karakter", "Riset", "Dialog", "Lainnya"] },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "pinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "title", "content", "category", "createdAt"]
+    },
+    "RevisionLog": {
+      "title": "RevisionLog",
+      "description": "Catatan aktivitas dan riwayat revisi",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string", "maxLength": 128 },
+        "chapterId": { "type": "string", "maxLength": 128 },
+        "chapterTitle": { "type": "string", "maxLength": 200 },
+        "authorName": { "type": "string", "maxLength": 150 },
+        "action": { "type": "string", "maxLength": 300 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "authorName", "action", "timestamp"]
+    },
+    "GlossaryTerm": {
+      "title": "GlossaryTerm",
+      "description": "Glosarium karakter, istilah, dan lokasi dunia cerita",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string", "maxLength": 128 },
+        "term": { "type": "string", "maxLength": 150 },
+        "category": { "type": "string", "enum": ["Karakter", "Lokasi", "Istilah Dunia", "Aturan Magic/Sains", "Lainnya"] },
+        "definition": { "type": "string", "maxLength": 1000 },
+        "aliases": { "type": "string", "maxLength": 300 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "term", "category", "definition", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Koleksi proyek naskah terpublikasi dan privat"
+    },
+    "/chapters/{chapterId}": {
+      "schema": "Chapter",
+      "description": "Koleksi bab-bab naskah"
+    },
+    "/ideas/{ideaId}": {
+      "schema": "Idea",
+      "description": "Koleksi catatan dan ide naskah"
+    },
+    "/logs/{logId}": {
+      "schema": "RevisionLog",
+      "description": "Koleksi log revisi penulisan"
+    },
+    "/glossary/{termId}": {
+      "schema": "GlossaryTerm",
+      "description": "Koleksi istilah glosarium dunia naskah"
+    }
+  }
+}

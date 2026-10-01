@@ -191,21 +191,48 @@ export default function App() {
     );
   }
 
+  const getGalleryPageInfo = () => {
+    let page = 1;
+    try {
+      const search = window.location.search;
+      const params = new URLSearchParams(search);
+      const parsed = parseInt(params.get("page") || "1", 10);
+      if (!isNaN(parsed) && parsed > 0) page = parsed;
+    } catch {
+      page = 1;
+    }
+
+    const publicCount = (db?.projects || initialDefaultDb.projects).filter((p) => !p.isPrivate).length;
+    const totalPages = Math.max(1, Math.ceil(publicCount / 12));
+    const validPage = Math.min(Math.max(1, page), totalPages);
+
+    const baseUrl = "https://studio.buku.biz.id";
+    const canonical = validPage > 1 ? `${baseUrl}/?page=${validPage}` : `${baseUrl}/`;
+    const prev = validPage > 1 ? (validPage === 2 ? `${baseUrl}/` : `${baseUrl}/?page=${validPage - 1}`) : null;
+    const next = validPage < totalPages ? `${baseUrl}/?page=${validPage + 1}` : null;
+
+    return { validPage, totalPages, canonical, prev, next };
+  };
+
+  const galleryPageInfo = getGalleryPageInfo();
+
   if (!userSession) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans select-none md:select-text">
+      <div className="min-h-screen bg-[#1f0330] text-slate-100 flex flex-col font-sans select-none md:select-text">
         <Helmet>
-          <title>Studio Buku – Platform Kolaborasi Penulisan Naskah Buku untuk Co-authorship</title>
+          <title>{`Studio Buku – Platform Penulisan Naskah Buku ${galleryPageInfo.validPage > 1 ? `(Halaman ${galleryPageInfo.validPage})` : ''}`}</title>
           <meta name="description" content="Studio Buku (studio.buku.biz.id): Platform penulisan dan penerbitan naskah kolaboratif. Jelajahi 60+ naskah novel, jurnal akademis, dan fiksi/non-fiksi karya penulis Indonesia." />
           <meta property="og:title" content="Studio Buku – Platform Kolaborasi Penulisan Naskah Buku" />
           <meta property="og:description" content="Jelajahi puluhan naskah novel, jurnal akademis, dan karya fiksi/non-fiksi terpublikasi karya para penulis di Studio Buku." />
           <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://studio.buku.biz.id/" />
+          <meta property="og:url" content={galleryPageInfo.canonical} />
           <meta property="og:site_name" content="Studio Buku" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Studio Buku – Platform Penulisan Naskah Buku" />
           <meta name="twitter:description" content="Dapatkan akses ke galeri naskah publik gratis karya para penulis lokal Indonesia." />
-          <link rel="canonical" href="https://studio.buku.biz.id/" />
+          <link rel="canonical" href={galleryPageInfo.canonical} />
+          {galleryPageInfo.prev && <link rel="prev" href={galleryPageInfo.prev} />}
+          {galleryPageInfo.next && <link rel="next" href={galleryPageInfo.next} />}
           <script type="application/ld+json">
             {JSON.stringify({
               "@context": "https://schema.org",
@@ -218,42 +245,27 @@ export default function App() {
             })}
           </script>
         </Helmet>
-        {/* PUBLIC FRONTPAGE HEADER BAR - LIGHT CORPORATE */}
-        <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3.5 shadow-sm">
+
+        {/* PUBLIC FRONTPAGE HEADER BAR - ROYAL PURPLE BENTO HEADER */}
+        <header className="sticky top-0 z-40 bg-[#160226]/85 backdrop-blur-md border-b border-purple-800/40 px-4 sm:px-8 py-3.5 shadow-2xl">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            {/* Logo frontpage: Cukup "Studio Buku" saja tanpa logo icon & tanpa "Nulis Buku Bareng" */}
-            <a href="/" className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight hover:text-amber-600 transition">
-              Studio Buku
+            <a href="/" className="hover:opacity-90 transition">
+              <StudioBukuLogo size="md" variant="dark" alwaysShowText tagline="Platform Penulisan & Co-Authorship" />
             </a>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition shadow-sm flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
+                className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-500/20 flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
               >
                 <LogIn className="w-4 h-4 text-slate-950 stroke-[2.5]" />
-                <span>Login</span>
+                <span>Masuk Penulis</span>
               </button>
             </div>
           </div>
         </header>
 
-        {/* HERO BANNER SECTION - LIGHT CORPORATE */}
-        <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-3 shadow-sm">
-            <div className="inline-flex items-center space-x-2 bg-amber-50 border border-amber-200 text-amber-900 px-3.5 py-1 rounded-full text-xs font-bold">
-              <span>📚 Platform Kolaborasi Penulisan Naskah Buku untuk Co-authorship</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Ruang Kerja Penulis & Galeri Naskah Terbuka
-            </h1>
-            <p className="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-3xl font-medium">
-              Selamat datang di Studio Buku (studio.buku.biz.id) — wadah penerbitan & penulisan naskah kolaboratif. Jelajahi puluhan karya novel, jurnal akademis, dan buku fiksi/non-fiksi karya para penulis Indonesia.
-            </p>
-          </div>
-        </section>
-
-        {/* PUBLIC GALLERY FRONTPAGE BODY */}
+        {/* PUBLIC GALLERY FRONTPAGE BODY WITH INTEGRATED BENTO HERO CARD */}
         <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
           <React.Suspense fallback={<LoadingFallback />}>
             <PublicProjectGallery
@@ -266,23 +278,21 @@ export default function App() {
           </React.Suspense>
         </main>
 
-        {/* FOOTER - LIGHT CORPORATE */}
-        <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 space-y-3 font-sans">
-          <div className="flex flex-wrap items-center justify-center gap-4 text-slate-600 font-medium">
-            <a href="/terms" className="hover:text-amber-600 transition">Syarat & Ketentuan</a>
+        {/* FOOTER - ROYAL PURPLE BENTO FOOTER */}
+        <footer className="border-t border-purple-900/50 bg-[#160226] py-8 text-center text-xs text-purple-300/70 space-y-3 font-sans">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-purple-200 font-medium">
+            <a href="/terms" className="hover:text-amber-400 transition">Syarat & Ketentuan</a>
             <span>•</span>
-            <a href="/privacy" className="hover:text-amber-600 transition">Kebijakan Privasi</a>
+            <a href="/privacy" className="hover:text-amber-400 transition">Kebijakan Privasi</a>
             <span>•</span>
-            <button onClick={() => setShowPricingView(true)} className="hover:text-amber-600 transition cursor-pointer">
+            <button onClick={() => setShowPricingView(true)} className="hover:text-amber-400 transition cursor-pointer">
               Biaya & Donasi
             </button>
           </div>
-          <p className="font-semibold text-slate-700">
+          <p className="font-semibold text-purple-100">
             Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID
           </p>
-          <p className="text-[11px] text-slate-400">
-            Platform Penulisan Buku Kolaboratif Indonesia
-          </p>
+          <p className="text-[11px] text-purple-400/60">Platform Penulisan Buku Kolaboratif Indonesia</p>
         </footer>
 
         {/* LOGIN MODAL OVERLAY */}

@@ -106,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "logs", label: "Log Revisi" },
     { id: "preview", label: "Pratinjau Buku" },
     { id: "ai", label: "Asisten AI" },
-    { id: "gallery", label: "🌐 Galeri Publik" },
+    { id: "gallery", label: "Galeri Publik" },
   ];
 
   return (
