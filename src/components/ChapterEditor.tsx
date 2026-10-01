@@ -517,12 +517,12 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
                         : `${currentTheme.bgCard} ${currentTheme.border} hover:border-amber-400/60 text-slate-900 dark:text-slate-100 font-bold`
                     }`}
                   >
-                    <div className="space-y-1 pr-2 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs font-mono font-black ${isSelected ? "text-slate-950" : "text-amber-600"}`}>#{idx + 1}</span>
-                        <h3 className="text-xs font-black truncate">{chap.title}</h3>
+                    <div className="space-y-1 pr-2 flex-1 min-w-0">
+                      <div className="flex items-start space-x-2">
+                        <span className={`text-xs font-mono font-black shrink-0 pt-0.5 ${isSelected ? "text-slate-950" : "text-amber-600"}`}>#{idx + 1}</span>
+                        <h3 className="text-xs font-black break-words whitespace-normal leading-snug">{chap.title}</h3>
                       </div>
-                      {chap.subtitle && <p className={`text-[11px] truncate ${isSelected ? "text-slate-900 font-semibold" : currentTheme.textMuted}`}>{chap.subtitle}</p>}
+                      {chap.subtitle && <p className={`text-[11px] break-words whitespace-normal leading-snug ${isSelected ? "text-slate-900 font-semibold" : currentTheme.textMuted}`}>{chap.subtitle}</p>}
                       <div className="flex items-center space-x-2 pt-1 text-[10px]">
                         <span className={`px-2 py-0.5 rounded font-black uppercase text-[9px] ${
                           chap.status === "final" ? "bg-emerald-600 text-white" :
@@ -599,10 +599,10 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
                     className={`p-3 rounded-2xl border-2 ${currentTheme.border} ${currentTheme.bgCard} space-y-2 shadow-sm transition hover:border-amber-400/80`}
                   >
                     <div className="flex items-start justify-between gap-1">
-                      <div className="space-y-0.5 pr-1">
+                      <div className="space-y-0.5 pr-1 min-w-0 flex-1">
                         <div className="flex items-center space-x-1.5">
                           {getCategoryIcon(item.category)}
-                          <span className="text-xs font-black truncate">{item.term}</span>
+                          <span className="text-xs font-black break-words whitespace-normal leading-snug">{item.term}</span>
                         </div>
                         <span className="inline-block text-[9px] font-black px-2 py-0.2 rounded-full bg-slate-900 text-amber-300 border border-slate-700">
                           {item.category}
