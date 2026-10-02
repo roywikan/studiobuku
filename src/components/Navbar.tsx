@@ -418,17 +418,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* High-Contrast Action Buttons & Profile Switcher */}
-          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 xl:space-x-2.5">
             
-            {/* Theme Selector Dropdown Button */}
+            {/* Theme Selector Dropdown Button (Lavender) */}
             <div className="relative">
               <button
                 onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-                className="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-black px-3.5 py-2 rounded-full border-2 border-amber-500/60 shadow-md transition-all duration-200"
-                title="Pilih Palet Warna Penulis"
+                className="p-2 sm:px-2.5 sm:py-1.5 flex items-center space-x-1.5 bg-slate-900/90 hover:bg-slate-800 text-amber-300 hover:text-amber-200 text-xs font-bold rounded-full border border-amber-500/50 shadow-sm transition-all duration-200 hover:scale-105 shrink-0"
+                title={`Palet Warna: ${currentTheme.badge} (Klik untuk ganti tema)`}
               >
-                <Palette className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">{currentTheme.badge}</span>
+                <Palette className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="hidden 2xl:inline text-[11px] font-black">{currentTheme.badge}</span>
               </button>
 
               {isPaletteOpen && (
@@ -488,45 +488,48 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Chapter Create Button */}
+            {/* Utility Capsule: Impor & Undang */}
+            <div className="flex items-center bg-slate-900/90 border border-slate-700/80 rounded-full p-0.5 shadow-sm shrink-0">
+              <button
+                onClick={onOpenImport}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition text-xs font-bold"
+                title="Impor Teks / Google Docs"
+              >
+                <Upload className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="hidden xl:inline text-[11px]">Impor</span>
+              </button>
+
+              <div className="w-px h-3.5 bg-slate-700/80 mx-0.5" />
+
+              <button
+                onClick={onOpenInvite}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition text-xs font-bold"
+                title="Undang Rekan Penulis (Co-Author)"
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="hidden xl:inline text-[11px]">Undang</span>
+              </button>
+            </div>
+
+            {/* Chapter Create Button (Bab Baru) */}
             <button
               onClick={onOpenNewChapter}
-              className="hidden sm:inline-flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-4 py-2 rounded-full transition-all shadow-lg shadow-amber-950/40 transform hover:scale-105 ring-2 ring-amber-300/50"
-              title="Tambah Bab Baru"
+              className="inline-flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black px-3 py-1.5 rounded-full transition-all shadow-md hover:scale-105 ring-1 ring-amber-300/60 shrink-0"
+              title="Tambah Bab Baru ke Naskah"
             >
-              <Plus className="w-4 h-4 text-slate-950" />
-              <span>Bab Baru</span>
-            </button>
-
-            {/* Import Button */}
-            <button
-              onClick={onOpenImport}
-              className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-full border-2 border-slate-700 transition shadow-md"
-              title="Impor Teks / Google Docs"
-            >
-              <Upload className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden md:inline">Impor</span>
-            </button>
-
-            {/* Invite Button */}
-            <button
-              onClick={onOpenInvite}
-              className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 rounded-full border-2 border-slate-700 transition shadow-md"
-              title="Undang Penulis Pendamping"
-            >
-              <Share2 className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden lg:inline">Undang</span>
+              <Plus className="w-4 h-4 text-slate-950 shrink-0" />
+              <span className="hidden sm:inline text-xs font-black">Bab Baru</span>
             </button>
 
             {/* Super Admin Badge & User Management Button */}
             {isSuperAdmin && onOpenUserManagement && (
               <button
                 onClick={onOpenUserManagement}
-                className="inline-flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3.5 py-2 rounded-full text-xs transition shadow-lg shadow-amber-400/20 transform hover:scale-105 cursor-pointer shrink-0"
-                title="Buka Manajemen Pengguna Cloudflare D1"
+                className="inline-flex items-center space-x-1.5 bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 font-black p-2 sm:px-2.5 sm:py-1.5 rounded-full text-xs transition border border-amber-400/60 shadow-sm hover:scale-105 cursor-pointer shrink-0"
+                title="Super Admin: Buka Manajemen Pengguna Cloudflare D1"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
-                <span>Super Admin</span>
+                <ShieldCheck className="w-4 h-4 text-amber-400 hover:text-slate-950 shrink-0" />
+                <span className="hidden 2xl:inline text-[11px]">Super Admin</span>
               </button>
             )}
 
