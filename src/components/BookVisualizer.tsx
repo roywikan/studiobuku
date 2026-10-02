@@ -36,10 +36,13 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
   const [showQrisModal, setShowQrisModal] = useState(false);
   const [copiedType, setCopiedType] = useState<"chapter" | "project" | null>(null);
 
+  const safeChapters = Array.isArray(chapters) ? chapters : [];
+  const safeAnnotations = Array.isArray(annotations) ? annotations : [];
+
   const authorCopyrightText = `Hak cipta milik : ${currentAuthor?.name || "masing masing user penulisnya"}, Nulis Buku Bareng di https://Studio.Buku.Biz.ID`;
 
-  const totalWords = chapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
-  const currentChapter = chapters[activeChapterIndex] || chapters[0];
+  const totalWords = safeChapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
+  const currentChapter = safeChapters[activeChapterIndex] || safeChapters[0];
 
   const slugify = (text: string) => {
     return (text || "")

@@ -9,6 +9,7 @@ interface RevisionLogsProps {
 }
 
 export const RevisionLogs: React.FC<RevisionLogsProps> = ({ logs, currentTheme }) => {
+  const safeLogs = Array.isArray(logs) ? logs : [];
   return (
     <div className={`flex-1 ${currentTheme.bgMain} ${currentTheme.textMain} p-6 overflow-y-auto transition-colors duration-300 min-h-[calc(100vh-5rem)]`}>
       <div className="max-w-4xl mx-auto space-y-6">
@@ -23,7 +24,7 @@ export const RevisionLogs: React.FC<RevisionLogsProps> = ({ logs, currentTheme }
         </div>
 
         <div className="space-y-3">
-          {logs.map((log) => {
+          {safeLogs.map((log) => {
             const timeAgo = new Date(log.timestamp).toLocaleString("id-ID", {
               weekday: 'short',
               day: 'numeric',
@@ -60,7 +61,7 @@ export const RevisionLogs: React.FC<RevisionLogsProps> = ({ logs, currentTheme }
             );
           })}
 
-          {logs.length === 0 && (
+          {safeLogs.length === 0 && (
             <div className={`py-12 text-center ${currentTheme.textMuted} font-bold`}>
               Belum ada log revisi tercatat.
             </div>
