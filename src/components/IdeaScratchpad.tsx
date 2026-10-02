@@ -44,11 +44,13 @@ export const IdeaScratchpad: React.FC<IdeaScratchpadProps> = ({
     setNewContent("");
   };
 
-  const filteredIdeas = ideas.filter(i => filterCategory === "All" || i.category === filterCategory);
+  const safeIdeas = Array.isArray(ideas) ? ideas : [];
+  const safeAuthors = Array.isArray(authors) ? authors : [];
+  const filteredIdeas = safeIdeas.filter(i => i && (filterCategory === "All" || i.category === filterCategory));
   const categories: Idea["category"][] = ["Plot", "Karakter", "Riset", "Dialog", "Lainnya"];
 
   const getAuthorName = (authorId: string) => {
-    const auth = authors.find(a => a.id === authorId);
+    const auth = safeAuthors.find(a => a && a.id === authorId);
     return auth ? auth.name : "Penulis Studio";
   };
 
