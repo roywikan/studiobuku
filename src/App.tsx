@@ -10,6 +10,7 @@ import { BookVisualizer } from "./components/BookVisualizer";
 import { AiAssistantView } from "./components/AiAssistantView";
 import { ImportModal } from "./components/ImportModal";
 import { InviteModal } from "./components/InviteModal";
+import { UserManagementModal } from "./components/UserManagementModal";
 import { LoginGate, UserSession } from "./components/LoginGate";
 import { DatabaseSeedModal } from "./components/DatabaseSeedModal";
 import { StudioBukuLogo } from "./components/StudioBukuLogo";
@@ -97,6 +98,7 @@ export default function App() {
   });
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSeedModalOpen, setIsSeedModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -362,16 +364,23 @@ export default function App() {
     );
   }
 
-  // Author privilege project filtering:
-  // Shows projects initiated by the author, co-authored projects, and shared Studio Buku catalog projects
-  const authorProjects = (db.projects || []).filter((p) => {
-    if (!currentAuthor && !userSession) return true;
-    const authorId = currentAuthor?.id || userSession?.id || "";
-    const authorName = currentAuthor?.name || userSession?.name || "";
-    const authorEmail = userSession?.email || "";
+  const isSuperAdmin = userSession?.role === "superadmin" || (userSession?.email && userSession.email.toLowerCase() === "roy.wikan@gmail.com");
 
-    const isOwner = p.ownerId === authorId || p.ownerId === authorName || p.ownerId === authorEmail;
-    
+  // Multi-user isolation in Cloudflare D1:
+  // - Super Admin (roy.wikan@gmail.com): Access & manage all projects (bypass isolation)
+  // - Regular Writers: Strictly isolated to projects they own + projects where they are co-authors
+  const authorProjects = (db.projects || []).filter((p) => {
+    if (isSuperAdmin) return true; // Super Admin access all
+    if (!userSession) return !p.isPrivate; // Guest: public only
+
+    const authorId = userSession.id || "";
+    const authorName = (userSession.name || "").toLowerCase();
+    const authorEmail = (userSession.email || "").toLowerCase();
+
+    const isOwner =
+      (p.ownerId && (p.ownerId === authorId || p.ownerId.toLowerCase() === authorEmail)) ||
+      (p.ownerName && (p.ownerName.toLowerCase() === authorName || p.ownerName.toLowerCase() === authorEmail));
+
     let coAuthorsList: string[] = [];
     if (Array.isArray(p.coAuthors)) {
       coAuthorsList = p.coAuthors;
@@ -384,15 +393,13 @@ export default function App() {
       }
     }
 
-    const isCoAuthor = Array.isArray(coAuthorsList) && coAuthorsList.some(
-      (ca) => ca === authorId || ca === authorName || ca === authorEmail
-    );
+    const isCoAuthor = Array.isArray(coAuthorsList) && coAuthorsList.some((ca) => {
+      if (!ca) return false;
+      const cleanCa = ca.toLowerCase();
+      return cleanCa === authorId || cleanCa === authorName || cleanCa === authorEmail || (authorEmail && cleanCa.includes(authorEmail.split("@")[0]));
+    });
+
     if (isOwner || isCoAuthor) return true;
-
-    // Collaborative Studio Buku catalog projects & public projects are accessible to all studio writers
-    if (!p.isPrivate) return true;
-    if (!p.ownerId || p.ownerId.startsWith("auth_") || p.ownerId === "auth_session") return true;
-
     return false;
   });
 
@@ -716,6 +723,8 @@ export default function App() {
         onLogout={handleLogout}
         saveStatus={saveStatus}
         lastSavedTime={lastSavedTime}
+        userSession={userSession}
+        onOpenUserManagement={() => setIsUserManagementOpen(true)}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -795,7 +804,15 @@ export default function App() {
       <InviteModal
         isOpen={isInviteOpen}
         onClose={() => setIsInviteOpen(false)}
+        projectId={project.id}
         projectName={project.title}
+        onCoAuthorsUpdated={() => loadData(project.id)}
+      />
+
+      <UserManagementModal
+        isOpen={isUserManagementOpen}
+        onClose={() => setIsUserManagementOpen(false)}
+        currentUserEmail={userSession?.email}
       />
 
       <DatabaseSeedModal

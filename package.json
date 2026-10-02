@@ -12,8 +12,8 @@
     "start": "tsx server.ts",
     "db:bootstrap": "npx wrangler d1 execute studiobuku-db --remote --file=./schema.sql",
     "db:bootstrap:local": "npx wrangler d1 execute studiobuku-db --local --file=./schema.sql",
-    "seed": "tsx scripts/seed-firestore.ts",
-    "db:seed:firestore": "tsx scripts/seed-firestore.ts"
+    "seed": "tsx scripts/seed-d1.ts",
+    "db:seed:d1": "tsx scripts/seed-d1.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.3.0",

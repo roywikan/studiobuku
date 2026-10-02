@@ -9,6 +9,7 @@ export interface UserSession {
   email: string;
   name: string;
   avatar: string;
+  role?: "user" | "superadmin" | "author";
   authMethod: "google" | "password";
   loginTime: string;
 }
@@ -28,36 +29,106 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess, onClose })
   const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Sync with Cloudflare D1 studiobuku-db on login
+  const syncUserWithD1 = async (user: any): Promise<UserSession> => {
+    const rawEmail = (user.email || "").trim().toLowerCase();
+    const emailPrefix = rawEmail ? rawEmail.split("@")[0] : "";
+    const displayName = user.displayName?.trim();
+    const cleanName = displayName && displayName.length > 0
+      ? displayName
+      : emailPrefix ? emailPrefix.replace(/[._]/g, " ") : "Penulis Google";
+
+    let role: "user" | "superadmin" | "author" = rawEmail === "roy.wikan@gmail.com" ? "superadmin" : "user";
+    let finalId = user.uid || rawEmail || `user_${Date.now()}`;
+    let finalName = cleanName;
+    let finalAvatar = user.photoURL || "👨‍💻";
+
+    try {
+      const res = await fetch("/api/auth/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: user.uid,
+          email: rawEmail,
+          name: cleanName,
+          avatar_url: user.photoURL || "👨‍💻"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.user) {
+          finalId = data.user.id || finalId;
+          finalName = data.user.name || finalName;
+          finalAvatar = data.user.avatar_url || finalAvatar;
+          role = data.user.role || role;
+        }
+      }
+    } catch (syncErr) {
+      console.warn("Failed to sync user with Cloudflare D1:", syncErr);
+    }
+
+    return {
+      id: finalId,
+      email: rawEmail || "penulis@gmail.com",
+      name: finalName,
+      avatar: finalAvatar,
+      role: role,
+      authMethod: "google",
+      loginTime: new Date().toLocaleTimeString("id-ID")
+    };
+  };
+
   // Listen to Firebase Auth state changes automatically
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const session: UserSession = {
-          id: user.uid || user.email || "user_google",
-          email: user.email || "penulis@gmail.com",
-          name: user.displayName || user.email?.split("@")[0] || "Penulis Google",
-          avatar: user.photoURL || "👨‍💻",
-          authMethod: "google",
-          loginTime: new Date().toLocaleTimeString("id-ID")
-        };
+        const session = await syncUserWithD1(user);
         onLoginSuccess(session);
       }
     });
     return () => unsubscribe();
   }, [onLoginSuccess]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
       setErrorMsg("Harap isi username dan password.");
       return;
     }
 
+    const cleanUser = username.trim().toLowerCase();
+    const isRoyAdmin = cleanUser === "roy.wikan@gmail.com" || cleanUser === "roy.wikan" || cleanUser === "admin";
+    const email = cleanUser.includes("@") ? cleanUser : `${cleanUser.replace(/\s+/g, ".")}@studiobuku.com`;
+    const name = username.trim();
+    const role: "user" | "superadmin" | "author" = isRoyAdmin ? "superadmin" : "user";
+
+    // Register/sync with D1
+    let finalId = "user_" + cleanUser.replace(/[^a-z0-9]/g, "_");
+    try {
+      const res = await fetch("/api/auth/google-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: finalId,
+          email,
+          name,
+          avatar_url: isRoyAdmin ? "👨‍💼" : "✍️"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.user?.id) finalId = data.user.id;
+      }
+    } catch (e) {
+      console.warn("Password user D1 sync notice:", e);
+    }
+
     const session: UserSession = {
-      id: "user_" + username.toLowerCase().replace(/\s+/g, "_"),
-      email: `${username.toLowerCase().replace(/\s+/g, ".")}@studiobuku.com`,
-      name: username.trim(),
-      avatar: "✍️",
+      id: finalId,
+      email,
+      name,
+      avatar: isRoyAdmin ? "👨‍💼" : "✍️",
+      role,
       authMethod: "password",
       loginTime: new Date().toLocaleTimeString("id-ID")
     };
@@ -72,26 +143,10 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess, onClose })
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
-      const rawEmail = user.email || "";
-      const emailPrefix = rawEmail ? rawEmail.split("@")[0] : "";
-      const displayName = user.displayName?.trim();
-      const cleanName = displayName && displayName.length > 0
-        ? displayName
-        : emailPrefix ? emailPrefix.replace(/[._]/g, " ") : "Penulis Google";
-
-      const session: UserSession = {
-        id: user.uid || rawEmail || "user_google",
-        email: rawEmail || "penulis@gmail.com",
-        name: cleanName,
-        avatar: user.photoURL || "👨‍💻",
-        authMethod: "google",
-        loginTime: new Date().toLocaleTimeString("id-ID")
-      };
-
+      const session = await syncUserWithD1(user);
       onLoginSuccess(session);
     } catch (err: any) {
-      console.error("Firebase Google Sign-In error:", err);
+      console.error("Google Sign-In error:", err);
       if (err.code === "auth/popup-closed-by-user") {
         setErrorMsg("Jendela masuk Google ditutup sebelum selesai.");
       } else if (err.code === "auth/popup-blocked") {

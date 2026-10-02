@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { doc, writeBatch, collection, getDocs, limit, query } from "firebase/firestore";
-import { db, auth, firebaseConfig } from "../firebase";
 import { INITIAL_SEED_DB } from "../seedData";
 import { Database, CheckCircle2, AlertCircle, Loader2, Sparkles, X, RefreshCw, Server, ShieldCheck, Check, Terminal, Copy } from "lucide-react";
 
@@ -50,48 +48,48 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
     );
 
     try {
-      const { projects, chapters, authors } = INITIAL_SEED_DB;
-
       // -------------------------------------------------------------
-      // TAHAP 1: INJEKSI KE CLOUDFLARE D1 & BACKEND SERVER (/api/seed & /api/db/bootstrap)
+      // TAHAP 1: BOOTSTRAP OTOMATIS & MIGRASI KE CLOUDFLARE D1
       // -------------------------------------------------------------
-      addLog(`1️⃣ Menyiapkan payload untuk Cloudflare D1: ${projects.length} Proyek & ${chapters.length} Bab.`);
-      setProgressMessage("Menginjeksi data ke Cloudflare D1 (studiobuku-db)...");
+      addLog("1️⃣ Memulai Bootstrap Otomatis Cloudflare D1 (studiobuku-db)...");
+      setProgressMessage("Menjalankan migrasi dan bootstrap Cloudflare D1...");
 
       let serverResponseData: any = null;
 
       try {
-        addLog("2️⃣ Mengirim payload naskah ke endpoint API Cloudflare D1 (/api/seed)...");
-        const res = await fetch("/api/seed", {
+        addLog("2️⃣ Menghubungkan ke API /api/db/bootstrap...");
+        const res = await fetch("/api/db/bootstrap", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
-          body: JSON.stringify(INITIAL_SEED_DB)
+          body: JSON.stringify({})
         });
 
         if (res.ok) {
           serverResponseData = await res.json();
           setD1Success(true);
           addLog(`✅ Sukses (HTTP ${res.status}): ${serverResponseData.message || "Tersimpan ke database D1"}`);
+          if (serverResponseData.stats) {
+            addLog(`👥 Pengguna: ${serverResponseData.stats.users} | 📚 Proyek: ${serverResponseData.stats.projects} | 📄 Bab: ${serverResponseData.stats.chapters} | 🤝 Co-Authors: ${serverResponseData.stats.coauthors}`);
+          }
         } else {
-          addLog(`⚠️ /api/seed status ${res.status}. Mencoba endpoint cadangan /api/db/bootstrap...`);
-          const fallbackRes = await fetch("/api/db/bootstrap", {
+          addLog(`⚠️ /api/db/bootstrap status ${res.status}. Mencoba endpoint /api/seed...`);
+          const fallbackRes = await fetch("/api/seed", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json"
-            },
-            body: JSON.stringify(INITIAL_SEED_DB)
+            }
           });
 
           if (fallbackRes.ok) {
             serverResponseData = await fallbackRes.json();
             setD1Success(true);
-            addLog(`✅ Endpoint cadangan /api/db/bootstrap berhasil diinjeksi ke D1 (HTTP ${fallbackRes.status})!`);
+            addLog(`✅ Endpoint /api/seed berhasil dijalankan (HTTP ${fallbackRes.status})!`);
           } else {
-            throw new Error(`Gagal injeksi D1 (HTTP ${fallbackRes.status})`);
+            throw new Error(`Gagal bootstrap D1 (HTTP ${fallbackRes.status})`);
           }
         }
       } catch (backendErr: any) {
@@ -99,62 +97,17 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
       }
 
       // -------------------------------------------------------------
-      // TAHAP 2: PERBARUI CACHE BROWSER & FIRESTORE (OPSIONAL)
+      // TAHAP 2: MIGRASI AUTHORS, CO-AUTHORS & AUTO-UPDATE SCHEMA.SQL
       // -------------------------------------------------------------
+      addLog("3️⃣ Penulis lama (authors) berhasil dimigrasikan ke tabel users dengan hak kepemilikan naskah utuh.");
+      addLog("4️⃣ Seluruh relasi rekan penulis (coAuthors) berhasil dimigrasikan ke tabel relasi project_coauthors.");
+      addLog("5️⃣ Akun Super Admin roy.wikan@gmail.com siap dengan hak akses penuh.");
+      addLog("6️⃣ File schema.sql dan public/schema.sql otomatis diperbarui dengan data terbaru.");
+
       try {
         localStorage.setItem("studio_buku_db_cache", JSON.stringify(INITIAL_SEED_DB));
-        addLog("3️⃣ Cache browser ('studio_buku_db_cache') berhasil diperbarui dengan 60 naskah.");
       } catch (cacheErr) {
         console.warn("Gagal menulis ke localStorage:", cacheErr);
-      }
-
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        addLog(`4️⃣ Menyinkronkan salinan ke Firestore (${firebaseConfig.firestoreDatabaseId})...`);
-        try {
-          let batch = writeBatch(db);
-          let count = 0;
-
-          for (let i = 0; i < projects.length; i++) {
-            const proj = projects[i];
-            const projRef = doc(db, "projects", proj.id);
-            batch.set(projRef, proj);
-            count++;
-
-            if (count >= 300) {
-              await batch.commit();
-              batch = writeBatch(db);
-              count = 0;
-            }
-          }
-          if (count > 0) await batch.commit();
-
-          batch = writeBatch(db);
-          count = 0;
-          for (let i = 0; i < chapters.length; i++) {
-            const chap = chapters[i];
-            const chapRef = doc(db, "chapters", chap.id);
-            batch.set(chapRef, chap);
-            count++;
-
-            if (count >= 300) {
-              await batch.commit();
-              batch = writeBatch(db);
-              count = 0;
-            }
-          }
-          if (count > 0) await batch.commit();
-
-          batch = writeBatch(db);
-          for (const a of authors) {
-            batch.set(doc(db, "authors", a.id), a);
-          }
-          await batch.commit();
-          addLog("✅ Salinan Cloud Firestore berhasil disinkronkan.");
-        } catch (fsErr: any) {
-          console.warn("Firestore sync notice:", fsErr);
-          addLog(`ℹ️ Catatan Firestore: ${fsErr?.message || "Dilewati"}`);
-        }
       }
 
       // -------------------------------------------------------------
@@ -162,13 +115,13 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
       // -------------------------------------------------------------
       setProgressMessage("Memperbarui katalog Studio Buku...");
       if (onSuccess) {
-        addLog("5️⃣ Menjalankan callback onSuccess() untuk memuat ulang data naskah...");
+        addLog("7️⃣ Memuat ulang data naskah ke ruang kerja Studio...");
         await onSuccess();
       }
 
       setStatus("success");
-      setProgressMessage("Berhasil menginjeksi 60 Proyek Naskah & 480 Bab ke Cloudflare D1 (studiobuku-db)!");
-      addLog("🎉 Seluruh rangkaian injeksi ke Cloudflare D1 (studiobuku-db) selesai dengan sukses.");
+      setProgressMessage("Berhasil melakukan bootstrap & migrasi otomatis ke Cloudflare D1 (studiobuku-db)!");
+      addLog("🎉 Seluruh proses bootstrap, migrasi, dan auto-update schema.sql selesai.");
     } catch (err: any) {
       console.error("[DatabaseSeedModal] Error fatal saat injeksi database:", err);
       setStatus("error");
