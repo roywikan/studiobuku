@@ -4,6 +4,21 @@ import path from "path";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import { INITIAL_SEED_DB, slugify as seedSlugify } from "./src/seedData";
+import {
+  d1,
+  getFullD1Database,
+  upsertD1User,
+  getAllD1Users,
+  updateD1UserRole,
+  getD1ProjectsForUser,
+  getD1ProjectCoAuthors,
+  addD1ProjectCoAuthor,
+  removeD1ProjectCoAuthor,
+  seedInitialCatalog,
+  syncToJsonBackup,
+  autoBootstrapD1,
+  exportD1SchemaSql
+} from "./src/server/d1";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
@@ -108,45 +123,32 @@ function cleanChapterContent(content: string = ""): string {
 const initialDb: DB = INITIAL_SEED_DB;
 function readDb(): DB {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, "utf-8");
-      const parsed = JSON.parse(data);
-      if (!parsed.glossary) parsed.glossary = initialDb.glossary;
-
-      if (parsed.chapters && Array.isArray(parsed.chapters)) {
-        parsed.chapters = parsed.chapters.map((c: any) => ({
-          ...c,
-          content: cleanChapterContent(c.content)
-        }));
-      }
-
-      // Migrate / Normalize schema for isPrivate, ownerId, ownerName, coAuthors
-      if (parsed.projects && Array.isArray(parsed.projects)) {
-        if (parsed.projects.length < 50) {
-          writeDb(initialDb);
-          return initialDb;
-        }
-
-        parsed.projects = parsed.projects.map((p: any) => ({
-          ...p,
-          isPrivate: typeof p.isPrivate === "boolean" ? p.isPrivate : false,
-          ownerId: p.ownerId || "auth_1",
-          ownerName: p.ownerName || "Rian Hidayat",
-          coAuthors: Array.isArray(p.coAuthors) ? p.coAuthors : ["auth_2", "Kirana Maharani"]
-        }));
-      }
-
-      return parsed;
+    const full = getFullD1Database();
+    if (full.projects && full.projects.length >= 50) {
+      return full as any;
     }
   } catch (e) {
-    console.error("Error reading DB file:", e);
+    console.error("Error reading from Cloudflare D1 SQLite:", e);
   }
-  writeDb(initialDb);
+
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.error("Error reading fallback JSON DB file:", e);
+  }
+
   return initialDb;
 }
 
 function writeDb(data: DB) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+  try {
+    syncToJsonBackup();
+  } catch (e) {
+    console.error("Error syncing JSON DB file:", e);
+  }
 }
 
 function linkifyGlossary(text: string, glossary: GlossaryTerm[]): string {
@@ -197,49 +199,33 @@ async function startServer() {
     res.json(db);
   });
 
-  // Automated DB Bootstrap & Seed Endpoints
+  // Automated Cloudflare D1 Bootstrap & Migration Endpoints
   const handleDatabaseSeed = (req: express.Request, res: express.Response) => {
     try {
-      console.log(`[Server Seed API] 📥 Received ${req.method} request on ${req.originalUrl || req.path}`);
-      
-      const body = req.body || {};
-      const hasPayload = body && Array.isArray(body.projects) && body.projects.length > 0;
-      
-      const targetDb: DB = hasPayload
-        ? {
-            projects: body.projects,
-            chapters: Array.isArray(body.chapters) ? body.chapters : INITIAL_SEED_DB.chapters,
-            authors: Array.isArray(body.authors) ? body.authors : INITIAL_SEED_DB.authors,
-            ideas: Array.isArray(body.ideas) ? body.ideas : INITIAL_SEED_DB.ideas,
-            logs: Array.isArray(body.logs) ? body.logs : INITIAL_SEED_DB.logs,
-            annotations: Array.isArray(body.annotations) ? body.annotations : [],
-            glossary: Array.isArray(body.glossary) ? body.glossary : INITIAL_SEED_DB.glossary,
-          }
-        : INITIAL_SEED_DB;
-
-      writeDb(targetDb);
-      console.log(`[Server Seed API] ✅ Berhasil menulis ${targetDb.projects.length} proyek dan ${targetDb.chapters.length} bab ke ${DB_FILE}`);
-
-      res.json({
-        success: true,
-        source: hasPayload ? "client_payload" : "server_seed_catalog",
-        message: `Database berhasil di-bootstrap dengan ${targetDb.projects.length} proyek naskah dan ${targetDb.chapters.length} bab!`,
-        totalProjects: targetDb.projects.length,
-        totalChapters: targetDb.chapters.length,
-        totalAuthors: targetDb.authors.length,
-        timestamp: new Date().toISOString()
-      });
+      console.log(`[Cloudflare D1 Bootstrap API] 📥 Received ${req.method} request on ${req.originalUrl || req.path}`);
+      const result = autoBootstrapD1();
+      res.json(result);
     } catch (err: any) {
-      console.error("[Server Seed API] ❌ Gagal melakukan bootstrap database:", err);
+      console.error("[Cloudflare D1 Bootstrap API] ❌ Gagal melakukan bootstrap database:", err);
       res.status(500).json({
         success: false,
-        error: "Gagal melakukan bootstrap database: " + (err?.message || "Internal error")
+        error: "Gagal melakukan bootstrap database D1: " + (err?.message || "Internal error")
       });
     }
   };
 
   app.all("/api/seed", handleDatabaseSeed);
   app.all("/api/db/bootstrap", handleDatabaseSeed);
+
+  // Manual Trigger to Auto-Update schema.sql
+  app.post("/api/db/export-schema", (req, res) => {
+    try {
+      exportD1SchemaSql();
+      res.json({ success: true, message: "File schema.sql berhasil diperbarui secara otomatis dari Cloudflare D1." });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || "Gagal export schema" });
+    }
+  });
 
   // Serve SQL files directly for Cloudflare D1 Data Explorer
   app.get("/schema.sql", (req, res) => {
@@ -254,6 +240,85 @@ async function startServer() {
       res.type("text/plain").sendFile(filePath);
     } else {
       res.status(404).send("File not found");
+    }
+  });
+
+  // Multi-User Authentication & Profile Sync (Cloudflare D1 studiobuku-db)
+  app.post("/api/auth/google-sync", (req, res) => {
+    try {
+      const { id, email, name, avatar_url } = req.body || {};
+      if (!email) {
+        return res.status(400).json({ error: "Email akun Google wajib diisi" });
+      }
+      const user = upsertD1User({ id, email, name, avatar_url });
+      res.json({ success: true, user });
+    } catch (err: any) {
+      console.error("[Google Sync] Error syncing user to D1:", err);
+      res.status(500).json({ error: err?.message || "Internal server error" });
+    }
+  });
+
+  // User Management in Cloudflare D1
+  app.get("/api/users", (req, res) => {
+    try {
+      const users = getAllD1Users();
+      res.json(users);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.put("/api/users/:id/role", (req, res) => {
+    try {
+      const { role } = req.body;
+      updateD1UserRole(req.params.id, role);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // Workspace Projects Query with Data Isolation & Co-Authoring
+  app.get("/api/projects", (req, res) => {
+    try {
+      const email = req.query.email as string;
+      const userId = req.query.userId as string;
+      const isSuperAdmin = req.query.isSuperAdmin === "true" || (email && email.toLowerCase() === "roy.wikan@gmail.com");
+
+      const result = getD1ProjectsForUser(email, userId, Boolean(isSuperAdmin));
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // Co-Authoring Collaboration APIs via Cloudflare D1 project_coauthors
+  app.get("/api/projects/:id/coauthors", (req, res) => {
+    try {
+      const coauthors = getD1ProjectCoAuthors(req.params.id);
+      res.json(coauthors);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.post("/api/projects/:id/coauthors", (req, res) => {
+    try {
+      const { email, role } = req.body;
+      if (!email) return res.status(400).json({ error: "Email rekan wajib diisi" });
+      const coauthor = addD1ProjectCoAuthor(req.params.id, email, role || "editor");
+      res.json({ success: true, coauthor });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.delete("/api/projects/:id/coauthors/:coauthorId", (req, res) => {
+    try {
+      removeD1ProjectCoAuthor(req.params.id, req.params.coauthorId);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
     }
   });
 

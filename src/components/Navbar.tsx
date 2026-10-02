@@ -3,7 +3,7 @@ import { Author, Project } from "../types";
 import { WriterTheme, WRITER_THEMES } from "../theme";
 import { StudioBukuLogo } from "./StudioBukuLogo";
 import { ProjectSettingsModal } from "./ProjectSettingsModal";
-import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, Lock, Globe, Settings, LayoutGrid, Database } from "lucide-react";
+import { Plus, Upload, Share2, Palette, Check, CheckCircle2, AlertCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FolderPlus, BookOpen, Lock, Globe, Settings, LayoutGrid, Database, Shield, ShieldCheck } from "lucide-react";
 
 interface NavbarProps {
   activeTab: "editor" | "ideas" | "logs" | "preview" | "ai" | "gallery";
@@ -26,6 +26,8 @@ interface NavbarProps {
   onLogout?: () => void;
   saveStatus?: "idle" | "typing" | "saving" | "saved" | "error";
   lastSavedTime?: string;
+  userSession?: any;
+  onOpenUserManagement?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -49,6 +51,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   saveStatus = "saved",
   lastSavedTime,
+  userSession,
+  onOpenUserManagement
 }) => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -111,6 +115,34 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: "gallery", label: "Galeri Publik" },
   ];
 
+  const isSuperAdmin = userSession?.role === "superadmin" || (userSession?.email && userSession.email.toLowerCase() === "roy.wikan@gmail.com");
+
+  // Group projects for workspace isolation
+  const myProjects = projects.filter((p) => {
+    if (!userSession) return true;
+    return (
+      (p.ownerId && (p.ownerId === userSession.id || p.ownerId === userSession.email)) ||
+      (p.ownerName && (p.ownerName === userSession.name || p.ownerName === userSession.email))
+    );
+  });
+
+  const collabProjects = projects.filter((p) => {
+    if (!userSession) return false;
+    const isOwner = (p.ownerId && (p.ownerId === userSession.id || p.ownerId === userSession.email)) ||
+      (p.ownerName && (p.ownerName === userSession.name || p.ownerName === userSession.email));
+    if (isOwner) return false;
+    if (Array.isArray(p.coAuthors)) {
+      return p.coAuthors.some((ca) => userSession.email && ca.toLowerCase().includes(userSession.email.split("@")[0].toLowerCase()));
+    }
+    return false;
+  });
+
+  const otherPlatformProjects = isSuperAdmin ? projects.filter((p) => {
+    const isMine = myProjects.some((m) => m.id === p.id);
+    const isCollab = collabProjects.some((c) => c.id === p.id);
+    return !isMine && !isCollab;
+  }) : [];
+
   return (
     <header className={`${currentTheme.bgHeader} text-slate-100 border-b border-white/15 sticky top-0 z-30 shadow-2xl transition-colors duration-300`}>
       <div className="w-full px-2 sm:px-4 lg:px-4 xl:px-6 2xl:px-8">
@@ -164,44 +196,135 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
                       <span className="text-xs font-black text-amber-300 flex items-center space-x-1">
                         <BookOpen className="w-3.5 h-3.5" />
-                        <span>Daftar Proyek Naskah Anda</span>
+                        <span>Ruang Kerja Naskah (D1)</span>
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400">{projects.length} Proyek</span>
+                      <span className="text-[10px] font-bold text-slate-400">{projects.length} Naskah</span>
                     </div>
 
-                    <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                      {projects.map((p) => {
-                        const isSelected = p.id === project.id;
-                        return (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              if (onSelectProject) onSelectProject(p.id);
-                              setIsProjectDropdownOpen(false);
-                            }}
-                            className={`w-full text-left p-2.5 rounded-xl text-xs transition flex items-center justify-between border-2 ${
-                              isSelected
-                                ? "bg-amber-400 text-slate-950 border-amber-300 font-black shadow-md"
-                                : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-100 font-bold"
-                            }`}
-                          >
-                            <div className="truncate pr-2">
-                              <div className="font-black truncate flex items-center space-x-1">
-                                <span>{p.title}</span>
-                                {p.isPrivate ? (
-                                  <span className="text-[8px] bg-red-500 text-white px-1 rounded font-black">🔒 Privat</span>
-                                ) : (
-                                  <span className="text-[8px] bg-emerald-500 text-slate-950 px-1 rounded font-black">🌐 Publik</span>
-                                )}
-                              </div>
-                              <div className={`text-[10px] truncate font-medium ${isSelected ? "text-slate-900" : "text-slate-400"}`}>
-                                {p.genre} • {p.subtitle}
-                              </div>
-                            </div>
-                            {isSelected && <Check className="w-4 h-4 text-slate-950 flex-shrink-0" />}
-                          </button>
-                        );
-                      })}
+                    <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                      {/* 1. Proyek Pribadi */}
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-black uppercase text-amber-400 px-1 flex items-center justify-between">
+                          <span>📁 Proyek Pribadi ({myProjects.length})</span>
+                        </div>
+                        {myProjects.length === 0 ? (
+                          <div className="text-[11px] text-slate-500 p-2 italic bg-slate-900/50 rounded-xl">
+                            Belum ada proyek pribadi.
+                          </div>
+                        ) : (
+                          myProjects.map((p) => {
+                            const isSelected = p.id === project.id;
+                            return (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  if (onSelectProject) onSelectProject(p.id);
+                                  setIsProjectDropdownOpen(false);
+                                }}
+                                className={`w-full text-left p-2 rounded-xl text-xs transition flex items-center justify-between border-2 ${
+                                  isSelected
+                                    ? "bg-amber-400 text-slate-950 border-amber-300 font-black shadow-md"
+                                    : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-100 font-bold"
+                                }`}
+                              >
+                                <div className="truncate pr-2">
+                                  <div className="font-black truncate flex items-center space-x-1">
+                                    <span>{p.title}</span>
+                                    {p.isPrivate ? (
+                                      <span className="text-[8px] bg-red-500 text-white px-1 rounded font-black">🔒 Privat</span>
+                                    ) : (
+                                      <span className="text-[8px] bg-emerald-500 text-slate-950 px-1 rounded font-black">🌐 Publik</span>
+                                    )}
+                                  </div>
+                                  <div className={`text-[10px] truncate font-medium ${isSelected ? "text-slate-900" : "text-slate-400"}`}>
+                                    {p.genre} • {p.subtitle}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-slate-950 flex-shrink-0" />}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* 2. Proyek Kolaborasi */}
+                      {collabProjects.length > 0 && (
+                        <div className="space-y-1 pt-1 border-t border-slate-850">
+                          <div className="text-[10px] font-black uppercase text-pink-400 px-1 flex items-center justify-between">
+                            <span>🤝 Proyek Kolaborasi ({collabProjects.length})</span>
+                          </div>
+                          {collabProjects.map((p) => {
+                            const isSelected = p.id === project.id;
+                            return (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  if (onSelectProject) onSelectProject(p.id);
+                                  setIsProjectDropdownOpen(false);
+                                }}
+                                className={`w-full text-left p-2 rounded-xl text-xs transition flex items-center justify-between border-2 ${
+                                  isSelected
+                                    ? "bg-pink-500 text-white border-pink-400 font-black shadow-md"
+                                    : "bg-slate-900 border-purple-900/60 hover:bg-slate-850 text-slate-100 font-bold"
+                                }`}
+                              >
+                                <div className="truncate pr-2">
+                                  <div className="font-black truncate flex items-center space-x-1">
+                                    <span>{p.title}</span>
+                                    <span className="text-[8px] bg-purple-500/40 text-purple-200 border border-purple-400/50 px-1 rounded">Co-Author</span>
+                                  </div>
+                                  <div className={`text-[10px] truncate font-medium ${isSelected ? "text-pink-100" : "text-slate-400"}`}>
+                                    Pemilik: {p.ownerName || "Rekan"}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-white flex-shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* 3. Seluruh Naskah Platform (Khusus Super Admin) */}
+                      {isSuperAdmin && otherPlatformProjects.length > 0 && (
+                        <div className="space-y-1 pt-1 border-t border-slate-850">
+                          <div className="text-[10px] font-black uppercase text-amber-300 px-1 flex items-center space-x-1">
+                            <Shield className="w-3 h-3 text-amber-400" />
+                            <span>Semua Naskah Platform ({otherPlatformProjects.length})</span>
+                          </div>
+                          {otherPlatformProjects.map((p) => {
+                            const isSelected = p.id === project.id;
+                            return (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  if (onSelectProject) onSelectProject(p.id);
+                                  setIsProjectDropdownOpen(false);
+                                }}
+                                className={`w-full text-left p-2 rounded-xl text-xs transition flex items-center justify-between border-2 ${
+                                  isSelected
+                                    ? "bg-amber-400 text-slate-950 border-amber-300 font-black shadow-md"
+                                    : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-100 font-bold"
+                                }`}
+                              >
+                                <div className="truncate pr-2">
+                                  <div className="font-black truncate flex items-center space-x-1">
+                                    <span>{p.title}</span>
+                                    {p.isPrivate ? (
+                                      <span className="text-[8px] bg-red-500 text-white px-1 rounded font-black">🔒 Privat</span>
+                                    ) : (
+                                      <span className="text-[8px] bg-emerald-500 text-slate-950 px-1 rounded font-black">🌐 Publik</span>
+                                    )}
+                                  </div>
+                                  <div className={`text-[10px] truncate font-medium ${isSelected ? "text-slate-900" : "text-slate-400"}`}>
+                                    {p.ownerName || "Penulis"} • {p.genre}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-slate-950 flex-shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-2 border-t border-slate-800 mt-2 space-y-1.5">
@@ -389,6 +512,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden lg:inline">Undang</span>
             </button>
 
+            {/* Super Admin Badge & User Management Button */}
+            {isSuperAdmin && onOpenUserManagement && (
+              <button
+                onClick={onOpenUserManagement}
+                className="inline-flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3.5 py-2 rounded-full text-xs transition shadow-lg shadow-amber-400/20 transform hover:scale-105 cursor-pointer shrink-0"
+                title="Buka Manajemen Pengguna Cloudflare D1"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
+                <span>Super Admin</span>
+              </button>
+            )}
+
             {/* Clickable Profile Switcher & Logout Menu */}
             <div className="relative">
               <button
@@ -439,6 +574,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </button>
                     ))}
+
+                    {userSession && (
+                      <div className="px-3.5 py-2 bg-slate-900 border-b border-slate-800 text-xs">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Akun Aktif:</div>
+                        <div className="font-black text-amber-300 truncate">{userSession.name}</div>
+                        <div className="text-[11px] text-slate-300 font-mono truncate">{userSession.email}</div>
+                        <div className="flex items-center space-x-1.5 mt-1">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                            Role: {userSession.role || "user"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {isSuperAdmin && onOpenUserManagement && (
+                      <div className="p-2 border-b border-slate-800">
+                        <button
+                          onClick={() => {
+                            setIsProfileOpen(false);
+                            onOpenUserManagement();
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs flex items-center space-x-2 bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 border border-amber-400/50 rounded-xl transition font-black cursor-pointer shadow-sm"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>👑 Kelola Pengguna D1</span>
+                        </button>
+                      </div>
+                    )}
 
                     {onLogout && (
                       <div className="pt-1 mt-1 border-t border-slate-800 px-2">

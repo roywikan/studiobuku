@@ -74,6 +74,24 @@ export interface Project {
   coAuthors?: string[];
 }
 
+export interface UserRecord {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  role: "user" | "superadmin" | "author" | "editor";
+  created_at: string;
+}
+
+export interface ProjectCoAuthor {
+  id: string;
+  project_id: string;
+  user_email: string;
+  user_id?: string;
+  role: "editor" | "reviewer" | "author";
+  created_at: string;
+}
+
 export interface DB {
   projects: Project[];
   chapters: Chapter[];
@@ -82,4 +100,7 @@ export interface DB {
   authors: Author[];
   annotations: Annotation[];
   glossary?: GlossaryItem[];
+  users?: UserRecord[];
+  coauthors?: ProjectCoAuthor[];
 }
+
