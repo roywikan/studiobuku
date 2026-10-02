@@ -23,12 +23,22 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     setLoading(true);
     try {
       const res = await fetch("/api/users");
-      if (res.ok) {
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
         const data = await res.json();
-        setUsers(data);
+        if (Array.isArray(data)) {
+          setUsers(data);
+        } else if (data && Array.isArray((data as any).users)) {
+          setUsers((data as any).users);
+        } else {
+          setUsers([]);
+        }
+      } else {
+        setUsers([]);
       }
     } catch (err) {
       console.error("Gagal memuat pengguna D1:", err);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -49,9 +59,10 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
         body: JSON.stringify({ role: newRole })
       });
       if (res.ok) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, role: newRole as any } : u))
-        );
+        setUsers((prev) => {
+          const arr = Array.isArray(prev) ? prev : [];
+          return arr.map((u) => (u.id === userId ? { ...u, role: newRole as any } : u));
+        });
         setToastMessage(`Peran berhasil diubah menjadi ${newRole}`);
         setTimeout(() => setToastMessage(null), 3000);
       }
@@ -64,8 +75,10 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
   if (!isOpen) return null;
 
-  const filteredUsers = users.filter((u) => {
-    const q = search.toLowerCase();
+  const safeUsers = Array.isArray(users) ? users : [];
+  const filteredUsers = safeUsers.filter((u) => {
+    if (!u) return false;
+    const q = (search || "").toLowerCase();
     return (
       (u.name && u.name.toLowerCase().includes(q)) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
@@ -138,13 +151,13 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
             title="Segarkan data pengguna D1"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>Segarkan ({users.length})</span>
+            <span>Segarkan ({safeUsers.length})</span>
           </button>
         </div>
 
         {/* Users Table / List */}
         <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/70 max-h-96 overflow-y-auto">
-          {loading && users.length === 0 ? (
+          {loading && safeUsers.length === 0 ? (
             <div className="p-8 text-center space-y-2">
               <Loader2 className="w-6 h-6 text-amber-400 animate-spin mx-auto" />
               <p className="text-xs text-slate-400 font-bold">Mengambil data dari Cloudflare D1...</p>

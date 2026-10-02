@@ -34,7 +34,9 @@ export const ChapterEditor: React.FC<ChapterEditorProps> = ({
   onUpdateGlossaryItem,
   onDeleteGlossaryItem,
 }) => {
-  const activeChapter = chapters.find(c => c.id === selectedChapterId) || chapters[0];
+  const safeChapters = Array.isArray(chapters) ? chapters : [];
+  const safeGlossary = Array.isArray(glossary) ? glossary : [];
+  const activeChapter = safeChapters.find(c => c && c.id === selectedChapterId) || safeChapters[0];
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");

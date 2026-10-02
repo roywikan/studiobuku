@@ -117,8 +117,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isSuperAdmin = userSession?.role === "superadmin" || (userSession?.email && userSession.email.toLowerCase() === "roy.wikan@gmail.com");
 
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const safeAuthors = Array.isArray(authors) ? authors : [];
+
   // Group projects for workspace isolation
-  const myProjects = projects.filter((p) => {
+  const myProjects = safeProjects.filter((p) => {
+    if (!p) return false;
     if (!userSession) return true;
     return (
       (p.ownerId && (p.ownerId === userSession.id || p.ownerId === userSession.email)) ||
@@ -126,7 +130,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     );
   });
 
-  const collabProjects = projects.filter((p) => {
+  const collabProjects = safeProjects.filter((p) => {
+    if (!p) return false;
     if (!userSession) return false;
     const isOwner = (p.ownerId && (p.ownerId === userSession.id || p.ownerId === userSession.email)) ||
       (p.ownerName && (p.ownerName === userSession.name || p.ownerName === userSession.email));
@@ -137,9 +142,10 @@ export const Navbar: React.FC<NavbarProps> = ({
     return false;
   });
 
-  const otherPlatformProjects = isSuperAdmin ? projects.filter((p) => {
-    const isMine = myProjects.some((m) => m.id === p.id);
-    const isCollab = collabProjects.some((c) => c.id === p.id);
+  const otherPlatformProjects = isSuperAdmin ? safeProjects.filter((p) => {
+    if (!p) return false;
+    const isMine = myProjects.some((m) => m && m.id === p.id);
+    const isCollab = collabProjects.some((c) => c && c.id === p.id);
     return !isMine && !isCollab;
   }) : [];
 
@@ -552,7 +558,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <span>Profil Penulis Studio:</span>
                       <span className="text-[10px] text-slate-400 font-normal">Pilih / Keluar</span>
                     </div>
-                    {authors.map((auth) => (
+                    {safeAuthors.map((auth) => (
                       <button
                         key={auth.id}
                         onClick={() => {
