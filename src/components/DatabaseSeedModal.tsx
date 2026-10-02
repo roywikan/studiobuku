@@ -64,7 +64,10 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
-          body: JSON.stringify({})
+          body: JSON.stringify({
+            projects: INITIAL_SEED_DB.projects,
+            chapters: INITIAL_SEED_DB.chapters
+          })
         });
 
         if (res.ok) {
@@ -81,7 +84,11 @@ export const DatabaseSeedModal: React.FC<DatabaseSeedModalProps> = ({
             headers: {
               "Content-Type": "application/json",
               "Accept": "application/json"
-            }
+            },
+            body: JSON.stringify({
+              projects: INITIAL_SEED_DB.projects,
+              chapters: INITIAL_SEED_DB.chapters
+            })
           });
 
           if (fallbackRes.ok) {

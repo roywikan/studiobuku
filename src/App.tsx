@@ -504,7 +504,14 @@ export default function App() {
   const handleRunDatabaseBootstrap = async () => {
     try {
       console.log("[App] 🔄 Menjalankan bootstrap database & memuat ulang data naskah...");
-      const res = await fetch("/api/db/bootstrap", { method: "POST" });
+      const res = await fetch("/api/db/bootstrap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projects: INITIAL_SEED_DB.projects,
+          chapters: INITIAL_SEED_DB.chapters
+        })
+      });
       if (!res.ok) {
         console.warn(`[App] /api/db/bootstrap status ${res.status}`);
       }
