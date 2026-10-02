@@ -569,12 +569,25 @@ export function autoBootstrapD1() {
   const countRow = d1.prepare("SELECT COUNT(*) as count FROM projects").get() as any;
   if (!countRow || countRow.count === 0) {
     seedInitialCatalog();
-  } else {
-    // 3. Lakukan migrasi data authors -> users
+    // 3. Update seed chapters and project synopses with new bespoke opening texts
+    const updateChapter = d1.prepare(`
+      UPDATE chapters SET content = ?, title = ? WHERE id = ?
+    `);
+    const updateProject = d1.prepare(`
+      UPDATE projects SET synopsis = ? WHERE id = ?
+    `);
+    for (const p of INITIAL_SEED_DB.projects) {
+      updateProject.run(p.synopsis, p.id);
+    }
+    for (const c of INITIAL_SEED_DB.chapters) {
+      updateChapter.run(c.content, c.title, c.id);
+    }
+
+    // 4. Lakukan migrasi data authors -> users
     migrateExistingAuthorsToUsers();
-    // 4. Lakukan migrasi co-authors -> project_coauthors
+    // 5. Lakukan migrasi co-authors -> project_coauthors
     migrateCoAuthorsToProjectCoauthors();
-    // 5. Update schema.sql secara otomatis
+    // 6. Update schema.sql secara otomatis
     exportD1SchemaSql();
     syncToJsonBackup();
   }

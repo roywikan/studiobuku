@@ -31,10 +31,8 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
   const [newAnnText, setNewAnnText] = useState<{ [chapterId: string]: string }>({});
   const [showAnnotationsPanel, setShowAnnotationsPanel] = useState(true);
 
-  // Public Share Modal State
-  const [showShareModal, setShowShareModal] = useState(false);
+  // QRIS Donation Modal State
   const [showQrisModal, setShowQrisModal] = useState(false);
-  const [copiedType, setCopiedType] = useState<"chapter" | "project" | null>(null);
 
   const safeChapters = Array.isArray(chapters) ? chapters : [];
   const safeAnnotations = Array.isArray(annotations) ? annotations : [];
@@ -44,27 +42,6 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
   const totalWords = safeChapters.reduce((acc, c) => acc + (c.content ? c.content.split(/\s+/).filter(Boolean).length : 0), 0);
   const currentChapter = safeChapters[activeChapterIndex] || safeChapters[0];
 
-  const slugify = (text: string) => {
-    return (text || "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "naskah";
-  };
-
-  const PUBLIC_DOMAIN = "https://studio.buku.biz.id";
-  const projSlug = slugify(project.title);
-  const chapSlug = currentChapter ? slugify(currentChapter.title) : "bab-1";
-
-  const chapterPublicUrl = `${PUBLIC_DOMAIN}/p/${projSlug}/${chapSlug}`;
-  const projectPublicUrl = `${PUBLIC_DOMAIN}/p/${projSlug}`;
-
-  const handleCopy = (url: string, type: "chapter" | "project") => {
-    navigator.clipboard.writeText(url);
-    setCopiedType(type);
-    setTimeout(() => setCopiedType(null), 2000);
-  };
 
   // Export TXT
   const handleExportTxt = () => {
@@ -577,45 +554,6 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
             <span>Anotasi ({annotations.filter(a => !a.resolved).length})</span>
           </button>
 
-          {/* High Contrast Share Public Reader HTML Preview Button */}
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-full transition shadow-lg font-black transform hover:scale-105 ring-2 ring-emerald-400/50"
-            title="Bagikan Link Reader HTML Publik untuk Pembaca / Editor Eksternal"
-          >
-            <Globe className="w-4 h-4 stroke-[3]" />
-            <span>Preview HTML Publik</span>
-          </button>
-
-          {/* Ekspor DOCX Button */}
-          <button
-            onClick={handleExportDocx}
-            className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-full transition shadow-lg font-black transform hover:scale-105 ring-2 ring-blue-400/50"
-            title="Ekspor & Unduh Naskah Format Word (.docx) untuk Editor/Penerbit"
-          >
-            <FileText className="w-4 h-4 stroke-[3]" />
-            <span>Ekspor Word (.docx)</span>
-          </button>
-
-          {/* Ekspor PDF Button */}
-          <button
-            onClick={handleExportPdf}
-            className="inline-flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs px-4 py-2 rounded-full transition shadow-lg font-black transform hover:scale-105 ring-2 ring-amber-300/50"
-            title="Ekspor & Unduh Naskah Buku Siap Cetak (Format PDF)"
-          >
-            <FileDown className="w-4 h-4 stroke-[3]" />
-            <span>Ekspor PDF</span>
-          </button>
-
-          {/* Export TXT Button */}
-          <button
-            onClick={handleExportTxt}
-            className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white border-2 border-slate-700 text-xs px-3.5 py-2 rounded-full transition shadow-md font-bold"
-            title="Unduh Teks Polos (.txt)"
-          >
-            <Download className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">TXT</span>
-          </button>
 
           {/* Print Button */}
           <button
@@ -833,118 +771,7 @@ export const BookVisualizer: React.FC<BookVisualizerProps> = ({
         )}
       </div>
 
-      {/* PUBLIC HTML READER SHARE MODAL */}
-      {showShareModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-950 border-2 border-emerald-500/50 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 text-white">
-            <div className="flex items-center justify-between border-b-2 border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <Globe className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-base font-extrabold">Preview & Link Reader HTML Publik</h3>
-              </div>
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="text-slate-400 hover:text-white font-black text-lg"
-              >
-                ✕
-              </button>
-            </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Tautan HTML Publik domain resmi <strong>studio.buku.biz.id</strong> dirancang khusus untuk menarik minat <strong>akademisi, investor, donatur hibah penulisan, penerbit, dan editor profesional</strong>. Tautan ini mendukung SEO lengkap & crawling Google Bot.
-            </p>
-
-            <div className="space-y-4">
-              {/* Link 1: Single Chapter Reader */}
-              <div className="p-4 bg-slate-900 border-2 border-slate-800 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-amber-300 flex items-center space-x-1">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>1. Reader HTML Per Bab ({currentChapter?.title})</span>
-                  </span>
-                  <a
-                    href={chapterPublicUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-1 text-[11px] font-bold text-amber-400 hover:underline"
-                  >
-                    <span>Buka Reader</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={chapterPublicUrl}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono select-all"
-                  />
-                  <button
-                    onClick={() => handleCopy(chapterPublicUrl, "chapter")}
-                    className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black rounded-lg transition shadow flex items-center space-x-1"
-                  >
-                    {copiedType === "chapter" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedType === "chapter" ? "Tersalin!" : "Salin Link"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Link 2: Full Project Reader */}
-              <div className="p-4 bg-slate-900 border-2 border-slate-800 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-emerald-400 flex items-center space-x-1">
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>2. Reader HTML Naskah Utuh Proyek ({project.title})</span>
-                  </span>
-                  <a
-                    href={projectPublicUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-1 text-[11px] font-bold text-emerald-400 hover:underline"
-                  >
-                    <span>Buka Naskah Utuh</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={projectPublicUrl}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono select-all"
-                  />
-                  <button
-                    onClick={() => handleCopy(projectPublicUrl, "project")}
-                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-black rounded-lg transition shadow flex items-center space-x-1"
-                  >
-                    {copiedType === "project" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedType === "project" ? "Tersalin!" : "Salin Link"}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-2">
-              <button
-                onClick={() => {
-                  setShowShareModal(false);
-                  setShowQrisModal(true);
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-xs font-black rounded-full transition shadow flex items-center space-x-1.5 cursor-pointer"
-              >
-                <span>💸 Lihat QRIS Donasi DANA</span>
-              </button>
-
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white border-2 border-slate-700 text-xs font-bold rounded-full transition"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* QRIS DANA DONATION MODAL */}
       {showQrisModal && (

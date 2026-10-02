@@ -784,6 +784,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         project={project}
         projects={authorProjects}
+        chapters={currentProjectChapters}
+        selectedChapterId={selectedChapterId}
         onSelectProject={handleSelectProject}
         onCreateProject={handleCreateProject}
         onUpdateProject={handleUpdateProject}
