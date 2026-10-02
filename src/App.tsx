@@ -15,7 +15,7 @@ import { LoginGate, UserSession } from "./components/LoginGate";
 import { DatabaseSeedModal } from "./components/DatabaseSeedModal";
 import { StudioBukuLogo } from "./components/StudioBukuLogo";
 import { INITIAL_SEED_DB } from "./seedData";
-import { LogIn, BookOpen } from "lucide-react";
+import { LogIn, BookOpen, Sun, Moon } from "lucide-react";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
 
@@ -96,6 +96,21 @@ export default function App() {
   const [themeId, setThemeIdState] = useState<string>(() => {
     return localStorage.getItem("studio_buku_theme") || "rosequartz";
   });
+  const [frontpageTheme, setFrontpageTheme] = useState<"light" | "dark">(() => {
+    try {
+      return (localStorage.getItem("studio_buku_frontpage_theme") as "light" | "dark") || "light";
+    } catch {
+      return "light";
+    }
+  });
+
+  const toggleFrontpageTheme = () => {
+    const next = frontpageTheme === "light" ? "dark" : "light";
+    setFrontpageTheme(next);
+    try {
+      localStorage.setItem("studio_buku_frontpage_theme", next);
+    } catch {}
+  };
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
@@ -264,8 +279,11 @@ export default function App() {
   const galleryPageInfo = getGalleryPageInfo();
 
   if (!userSession) {
+    const isLight = frontpageTheme === "light";
     return (
-      <div className="min-h-screen bg-[#1f0330] text-slate-100 flex flex-col font-sans select-none md:select-text">
+      <div className={`min-h-screen flex flex-col font-sans select-none md:select-text transition-colors duration-300 ${
+        isLight ? "bg-white text-slate-900" : "bg-[#1f0330] text-slate-100"
+      }`}>
         <Helmet>
           <title>{`Studio Buku – Platform Penulisan Naskah Buku ${galleryPageInfo.validPage > 1 ? `(Halaman ${galleryPageInfo.validPage})` : ''}`}</title>
           <meta name="description" content="Studio Buku (studio.buku.biz.id): Platform penulisan dan penerbitan naskah kolaboratif. Jelajahi 60+ naskah novel, jurnal akademis, dan fiksi/non-fiksi karya penulis Indonesia." />
@@ -293,18 +311,44 @@ export default function App() {
           </script>
         </Helmet>
 
-        {/* PUBLIC FRONTPAGE HEADER BAR - ROYAL PURPLE BENTO HEADER */}
-        <header className="sticky top-0 z-40 bg-[#160226]/85 backdrop-blur-md border-b border-purple-800/40 px-4 sm:px-8 py-3.5 shadow-2xl">
+        {/* PUBLIC FRONTPAGE HEADER BAR */}
+        <header className={`sticky top-0 z-40 backdrop-blur-md px-4 sm:px-8 py-3.5 transition-colors duration-300 ${
+          isLight
+            ? "bg-white/95 border-b border-slate-200/90 shadow-sm"
+            : "bg-[#160226]/85 border-b border-purple-800/40 shadow-2xl"
+        }`}>
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <a href="/" className="hover:opacity-90 transition">
-              <StudioBukuLogo size="md" variant="dark" alwaysShowText tagline="Platform Penulisan & Co-Authorship" />
+              <StudioBukuLogo
+                size="md"
+                variant={isLight ? "light" : "dark"}
+                alwaysShowText
+                tagline="Platform Penulisan & Co-Authorship"
+              />
             </a>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
+              {/* Light Mode / Dark Mode Toggle Button */}
+              <button
+                onClick={toggleFrontpageTheme}
+                className={`p-2.5 rounded-full transition-all flex items-center justify-center cursor-pointer border ${
+                  isLight
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300/80 shadow-sm hover:scale-105"
+                    : "bg-[#290542] hover:bg-[#3b0854] text-amber-300 border-purple-600/50 shadow-md hover:scale-105"
+                }`}
+                title={isLight ? "Beralih ke Mode Gelap (Dark Mode)" : "Beralih ke Mode Terang (Light Mode)"}
+                aria-label="Ganti Tema Tampilan"
+              >
+                {isLight ? (
+                  <Moon className="w-4 h-4 text-slate-700" />
+                ) : (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                )}
+              </button>
+
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-lg shadow-amber-400/30 flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
-                style={{ backgroundColor: "#fbbf24", color: "#020617" }}
+                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-2.5 rounded-full text-xs transition shadow-md shadow-amber-400/20 flex items-center space-x-1.5 cursor-pointer transform active:scale-95"
               >
                 <LogIn className="w-4 h-4 text-slate-950 stroke-[2.5]" />
                 <span>Masuk</span>
@@ -319,6 +363,7 @@ export default function App() {
             <PublicProjectGallery
               projects={db?.projects || initialDefaultDb.projects}
               chapters={db?.chapters || initialDefaultDb.chapters}
+              isLightMode={isLight}
               onSelectPublicProject={(p) => {
                 window.location.href = `/p/${slugify(p.title)}`;
               }}
@@ -326,21 +371,36 @@ export default function App() {
           </React.Suspense>
         </main>
 
-        {/* FOOTER - ROYAL PURPLE BENTO FOOTER */}
-        <footer className="border-t border-purple-900/50 bg-[#160226] py-8 text-center text-xs text-purple-300/70 space-y-3 font-sans">
-          <div className="flex flex-wrap items-center justify-center gap-4 text-purple-200 font-medium">
-            <a href="/terms" className="hover:text-amber-400 transition">Syarat & Ketentuan</a>
-            <span>•</span>
-            <a href="/privacy" className="hover:text-amber-400 transition">Kebijakan Privasi</a>
-            <span>•</span>
-            <button onClick={() => setShowPricingView(true)} className="hover:text-amber-400 transition cursor-pointer">
+        {/* FOOTER */}
+        <footer className={`border-t py-8 text-center text-xs space-y-3 font-sans transition-colors duration-300 ${
+          isLight
+            ? "border-slate-200/90 bg-slate-50 text-slate-600"
+            : "border-purple-900/50 bg-[#160226] text-purple-300/70"
+        }`}>
+          <div className={`flex flex-wrap items-center justify-center gap-4 font-semibold ${
+            isLight ? "text-slate-700" : "text-purple-200"
+          }`}>
+            <a href="/terms" className={`transition ${isLight ? "hover:text-amber-600" : "hover:text-amber-400"}`}>
+              Syarat & Ketentuan
+            </a>
+            <span className={isLight ? "text-slate-300" : "text-purple-400/50"}>•</span>
+            <a href="/privacy" className={`transition ${isLight ? "hover:text-amber-600" : "hover:text-amber-400"}`}>
+              Kebijakan Privasi
+            </a>
+            <span className={isLight ? "text-slate-300" : "text-purple-400/50"}>•</span>
+            <button
+              onClick={() => setShowPricingView(true)}
+              className={`transition cursor-pointer ${isLight ? "hover:text-amber-600" : "hover:text-amber-400"}`}
+            >
               Biaya & Donasi
             </button>
           </div>
-          <p className="font-semibold text-purple-100">
+          <p className={`font-bold ${isLight ? "text-slate-900" : "text-purple-100"}`}>
             Studio Buku • Hak Cipta 2026 Studio.Buku.Biz.ID
           </p>
-          <p className="text-[11px] text-purple-400/60">Platform Penulisan Buku Kolaboratif Indonesia</p>
+          <p className={`text-[11px] font-medium ${isLight ? "text-slate-500" : "text-purple-400/60"}`}>
+            Platform Penulisan Buku Kolaboratif Indonesia
+          </p>
         </footer>
 
         {/* LOGIN MODAL OVERLAY */}
@@ -750,6 +810,7 @@ export default function App() {
             <PublicProjectGallery
               projects={db.projects}
               chapters={db.chapters}
+              isLightMode={!currentTheme.isDark}
               onSelectPublicProject={(p) => {
                 setSelectedProjectId(p.id);
                 setActiveTab("preview");

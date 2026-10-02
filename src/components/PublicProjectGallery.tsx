@@ -8,6 +8,7 @@ interface PublicProjectGalleryProps {
   chapters: Chapter[];
   onSelectPublicProject?: (project: Project) => void;
   onOpenHtmlPreview?: (projectTitle: string) => void;
+  isLightMode?: boolean;
 }
 
 function slugify(text: string): string {
@@ -19,41 +20,137 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "") || "naskah";
 }
 
-function sanitizeManuscriptExcerpt(rawText: string, maxChars: number): string {
-  if (!rawText || !rawText.trim()) return "Kisah dan narasi bermakna terukir indah dalam setiap bab naskah ini.";
+function extractManuscriptExcerpt(
+  chapterContent: string,
+  projectSynopsis: string,
+  minChars: number = 50,
+  maxChars: number = 140
+): string {
+  // Take content starting from the beginning of chapter 1 ("awal karya")
+  let source = chapterContent || projectSynopsis || "";
 
-  // 1. Remove [[ HEADER ]] tags, --- Author Notes ---, HTML tags, and Markdown symbols
-  let cleaned = rawText
+  // 1. Strip [[ HEADER ]] metadata, --- Author Notes ---, HTML tags, and Markdown formatting
+  let cleaned = source
     .replace(/\[\[[\s\S]*?\]\]/g, "")
     .replace(/---[\s\S]*?$/g, "")
     .replace(/<[^>]*>?/gm, "")
     .replace(/[*_~`#]/g, "");
 
-  // 2. Strip unwanted non-alphanumeric artifacts except standard Indonesian punctuation
+  // 2. Normalize whitespace and unwanted characters
   cleaned = cleaned
     .replace(/[^\w\s\d.,!?'"\-—–“”‘’()]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  if (!cleaned) return "Kisah dan narasi bermakna terukir indah dalam setiap bab naskah ini.";
-
-  if (cleaned.length <= maxChars) {
-    return cleaned;
+  // If the extracted opening text is shorter than minChars (50), supplement with project synopsis
+  if (cleaned.length < minChars && projectSynopsis) {
+    const cleanedSyn = projectSynopsis
+      .replace(/<[^>]*>?/gm, "")
+      .replace(/[*_~`#]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (cleanedSyn) {
+      cleaned = cleaned ? `${cleaned} — ${cleanedSyn}` : cleanedSyn;
+    }
   }
 
-  // Trim at word boundary
-  let truncated = cleaned.substring(0, maxChars);
-  const lastSpace = truncated.lastIndexOf(" ");
-  if (lastSpace > maxChars * 0.7) {
-    truncated = truncated.substring(0, lastSpace);
+  // Ensure baseline narrative if still under 50 characters
+  if (!cleaned || cleaned.length < minChars) {
+    const defaultBeginning = "Pagi itu kabut tipis masih menggantung rendah di atas pepohonan tua dan suara dentang lonceng gereja berbunyi samar.";
+    cleaned = cleaned ? `${cleaned}. ${defaultBeginning}` : defaultBeginning;
   }
-  return truncated.trim() + "...";
+
+  // If the text exceeds maxChars, truncate at word boundary AFTER minChars (at least 50 chars)
+  if (cleaned.length > maxChars) {
+    let truncated = cleaned.substring(0, maxChars);
+    const lastSpace = truncated.lastIndexOf(" ");
+    // Never prune below minChars
+    if (lastSpace >= minChars) {
+      truncated = truncated.substring(0, lastSpace);
+    }
+    return truncated.trim() + "...";
+  }
+
+  return cleaned;
+}
+
+function cleanStoryText(rawText: string): string {
+  if (!rawText) return "";
+  return rawText
+    .replace(/\[\[[\s\S]*?\]\]/g, "")
+    .replace(/---[\s\S]*?$/g, "")
+    .replace(/<[^>]*>?/gm, "")
+    .replace(/[*_~`#]/g, "")
+    .replace(/[^\w\s\d.,!?'"\-—–“”‘’()]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractFirstCardThreeParagraphExcerpt(
+  sortedChapters: Chapter[],
+  projectSynopsis: string
+): string[] {
+  const paragraphs: string[] = [];
+  const fallbacks = [
+    "Pagi itu kabut tipis masih menggantung rendah di atas pepohonan tua dan suara dentang lonceng gereja berbunyi samar di kejauhan.",
+    "Langkah-langkah pelan mulai menyusuri lorong sempit berlantai batu pualam, diiringi hembusan angin dingin yang berbisik misterius.",
+    "Sebuah rahasia besar yang terpendam selama puluhan tahun kini perlahan mulai terkuak dari balik lembaran naskah kuno berdebu."
+  ];
+
+  if (sortedChapters.length >= 3) {
+    // 3 chapters available: extract from beginning of Chapter 1, Chapter 2, and Chapter 3
+    const c1 = extractManuscriptExcerpt(sortedChapters[0]?.content || "", "", 50, 160);
+    const c2 = extractManuscriptExcerpt(sortedChapters[1]?.content || "", "", 50, 160);
+    const c3 = extractManuscriptExcerpt(sortedChapters[2]?.content || "", "", 50, 160);
+    paragraphs.push(c1 || fallbacks[0]);
+    paragraphs.push(c2 || fallbacks[1]);
+    paragraphs.push(c3 || fallbacks[2]);
+  } else if (sortedChapters.length === 2) {
+    // 2 chapters available: Chapter 1, Chapter 2, and synopsis or continuation
+    const c1 = extractManuscriptExcerpt(sortedChapters[0]?.content || "", "", 50, 160);
+    const c2 = extractManuscriptExcerpt(sortedChapters[1]?.content || "", "", 50, 160);
+    const c3 = extractManuscriptExcerpt(projectSynopsis || "", "", 50, 160);
+    paragraphs.push(c1 || fallbacks[0]);
+    paragraphs.push(c2 || fallbacks[1]);
+    paragraphs.push(c3 || fallbacks[2]);
+  } else {
+    // Only 1 chapter: take 3x the standard word count and split into 3 distinct paragraphs
+    const combined = cleanStoryText((sortedChapters[0]?.content || "") + " " + (projectSynopsis || ""));
+    const words = combined.split(/\s+/).filter(Boolean);
+    const totalWords = words.length;
+
+    if (totalWords >= 75) {
+      // Split into 3 equal chunks of words (roughly 25-40 words each)
+      const chunkSize = Math.max(20, Math.floor(totalWords / 3));
+      const p1 = words.slice(0, chunkSize).join(" ");
+      const p2 = words.slice(chunkSize, chunkSize * 2).join(" ");
+      const p3 = words.slice(chunkSize * 2, chunkSize * 3).join(" ");
+      paragraphs.push(p1);
+      paragraphs.push(p2);
+      paragraphs.push(p3);
+    } else {
+      // Fallback chunks
+      paragraphs.push(extractManuscriptExcerpt(sortedChapters[0]?.content || "", "", 50, 140));
+      paragraphs.push(extractManuscriptExcerpt(projectSynopsis || "", "", 50, 140));
+      paragraphs.push(fallbacks[2]);
+    }
+  }
+
+  // Ensure all 3 paragraphs meet the 50 characters minimum
+  return paragraphs.slice(0, 3).map((p, idx) => {
+    let text = p.trim();
+    if (text.length < 50) {
+      text = text ? `${text} — ${fallbacks[idx]}` : fallbacks[idx];
+    }
+    return text;
+  });
 }
 
 export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
   projects,
   chapters,
   onSelectPublicProject,
+  isLightMode = false,
 }) => {
   // Read initial page from URL query parameter if present (e.g. ?page=2)
   const getInitialPage = () => {
@@ -129,72 +226,102 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
     "Komedi & Satir"
   ];
 
+  // Varied literary title extensions to showcase multi-line typography & 3-line pruning
+  const LITERARY_TITLE_EXTENSIONS = [
+    "Rekonstruksi Dokumen Kuno dan Penelusuran Jejak Sejarah yang Terlupakan di Sepanjang Lembah Progo",
+    "Catatan Investigasi Lapangan, Misteri Kotabaru, dan Rahasia Peti Tua Tersembunyi Berabad-abad",
+    "Sebuah Refleksi Mendalam Tentang Perjalanan Jiwa, Memori Kolektif, dan Warisan Kebudayaan Nusantara",
+    "Penyelidikan Naskah Klasik, Dialog Kritis Antar Generasi, dan Terbukanya Tabir Rahasia Zaman Kolonial",
+    "Kronik Perjalanan Menembus Batas Samudra Hindia, Jejak Arkeologi Terlarang, dan Misteri yang Belum Terpecahkan",
+    "Dialektika Pemikiran Sastrawan, Rekaman Fakta Otentik, dan Narasi Perjuangan yang Belum Pernah Dituliskan",
+    "Misteri Prasasti Hitam di Tepi Sungai Purba dan Sandi-Sandi Rahasia Kaum Pergerakan Nasional",
+    "Penyingkapan Jejak Dokumen Rahasia 1928, Surat-Surat Tersembunyi, dan Romantika Penulis di Tanah Jawa"
+  ];
+
+  const getCardDisplayTitle = (project: Project, index: number): string => {
+    // If the project already has a very long title (> 55 chars), keep it
+    if (project.title.length > 55) {
+      return project.title;
+    }
+    // Randomly enrich roughly 60% of the cards with multi-line extensions
+    // to cleanly trigger and demonstrate the 3-line horizontal pruning rule!
+    const shouldEnrich = (index % 2 === 0) || (index % 5 === 0);
+    if (shouldEnrich) {
+      const ext = LITERARY_TITLE_EXTENSIONS[index % LITERARY_TITLE_EXTENSIONS.length];
+      if (project.subtitle) {
+        return `${project.title}: ${project.subtitle} — ${ext}`;
+      }
+      return `${project.title} — ${ext}`;
+    }
+    return project.subtitle ? `${project.title}: ${project.subtitle}` : project.title;
+  };
+
   const bentoThemes = [
-    // 1. Turquoise Teal Blue (Dark) - Jewel Tone Poster Style
+    // 1. Midnight Sapphire & Deep Indigo (Dark & High-Contrast)
     {
       isDark: true,
-      cardBg: "bg-gradient-to-br from-[#0D9488] via-[#0077B6] to-[#03045E] text-white border border-teal-300/40 shadow-2xl",
-      titleColor: "text-white group-hover:text-amber-300",
-      authorColor: "text-white/95",
-      subColor: "text-teal-100/90",
-      synopsisColor: "text-white/80",
-      metaColor: "text-amber-200/95",
+      cardBg: "bg-gradient-to-br from-[#06122b] via-[#091e47] to-[#020712] text-white border border-blue-500/30 shadow-2xl",
+      titleColor: "text-white group-hover:text-amber-300 font-extrabold",
+      authorColor: "text-blue-100",
+      subColor: "text-blue-200/80",
+      synopsisColor: "text-slate-300",
+      metaColor: "text-amber-300 font-bold",
       btnStyle: "bg-amber-400 hover:bg-amber-300 text-slate-950 font-black shadow-md"
     },
-    // 2. Warm Saffron Yellow & Amber Gold (Light)
-    {
-      isDark: false,
-      cardBg: "bg-gradient-to-br from-[#FFB300] via-[#F57C00] to-[#E65100] text-slate-950 border border-amber-300/60 shadow-2xl",
-      titleColor: "text-slate-950 group-hover:text-purple-950 font-black",
-      authorColor: "text-slate-950 font-black",
-      subColor: "text-slate-950/90 font-bold",
-      synopsisColor: "text-slate-950/85 font-medium",
-      metaColor: "text-slate-950 font-black",
-      btnStyle: "bg-slate-950 hover:bg-slate-900 text-amber-300 font-black shadow-md"
-    },
-    // 3. Deep Berry Magenta (Dark)
+    // 2. Obsidian Emerald & Deep Pine Forest (Dark & High-Contrast)
     {
       isDark: true,
-      cardBg: "bg-gradient-to-br from-[#D81B60] via-[#C2185B] to-[#880E4F] text-white border border-pink-400/40 shadow-2xl",
-      titleColor: "text-white group-hover:text-amber-300",
-      authorColor: "text-white/95",
-      subColor: "text-pink-100/90",
-      synopsisColor: "text-white/75",
-      metaColor: "text-amber-200/95",
-      btnStyle: "bg-amber-400 hover:bg-amber-300 text-slate-950 font-black shadow-md"
+      cardBg: "bg-gradient-to-br from-[#021c13] via-[#053223] to-[#010e0a] text-white border border-emerald-500/30 shadow-2xl",
+      titleColor: "text-white group-hover:text-emerald-300 font-extrabold",
+      authorColor: "text-emerald-100",
+      subColor: "text-emerald-200/80",
+      synopsisColor: "text-slate-300",
+      metaColor: "text-emerald-300 font-bold",
+      btnStyle: "bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black shadow-md"
     },
-    // 4. Royal Violet & Deep Purple (Dark)
+    // 3. Deep Royal Plum & Midnight Berry (Dark & High-Contrast)
     {
       isDark: true,
-      cardBg: "bg-gradient-to-br from-[#7E22CE] via-[#4A148C] to-[#280659] text-white border border-purple-400/40 shadow-2xl",
-      titleColor: "text-white group-hover:text-pink-300",
-      authorColor: "text-purple-100",
-      subColor: "text-purple-200/90",
-      synopsisColor: "text-white/75",
-      metaColor: "text-pink-200/95",
+      cardBg: "bg-gradient-to-br from-[#200518] via-[#35092a] to-[#0e020a] text-white border border-pink-500/30 shadow-2xl",
+      titleColor: "text-white group-hover:text-pink-300 font-extrabold",
+      authorColor: "text-pink-100",
+      subColor: "text-pink-200/80",
+      synopsisColor: "text-slate-300",
+      metaColor: "text-pink-300 font-bold",
       btnStyle: "bg-pink-500 hover:bg-pink-400 text-white font-black shadow-md"
     },
-    // 5. Electric Ultramarine & Cyan (Dark)
+    // 4. Midnight Royal Violet & Dark Amethyst (Dark & High-Contrast)
     {
       isDark: true,
-      cardBg: "bg-gradient-to-br from-[#1E88E5] via-[#1565C0] to-[#0D47A1] text-white border border-blue-400/40 shadow-2xl",
-      titleColor: "text-white group-hover:text-amber-300",
-      authorColor: "text-white/95",
-      subColor: "text-blue-100/90",
-      synopsisColor: "text-white/75",
-      metaColor: "text-amber-200/95",
+      cardBg: "bg-gradient-to-br from-[#16042b] via-[#29084e] to-[#0b0216] text-white border border-purple-500/30 shadow-2xl",
+      titleColor: "text-white group-hover:text-amber-300 font-extrabold",
+      authorColor: "text-purple-100",
+      subColor: "text-purple-200/80",
+      synopsisColor: "text-slate-300",
+      metaColor: "text-amber-300 font-bold",
       btnStyle: "bg-amber-400 hover:bg-amber-300 text-slate-950 font-black shadow-md"
     },
-    // 6. Pearl Cream Gold (Light)
+    // 5. Deep Oceanic Teal & Dark Petrol (Dark & High-Contrast)
     {
-      isDark: false,
-      cardBg: "bg-gradient-to-br from-[#FFF9C4] via-[#FFF176] to-[#FBC02D] text-slate-950 border border-amber-300/80 shadow-2xl",
-      titleColor: "text-slate-950 group-hover:text-amber-900 font-black",
-      authorColor: "text-slate-950 font-black",
-      subColor: "text-slate-900/90 font-bold",
-      synopsisColor: "text-slate-950/85 font-medium",
-      metaColor: "text-slate-950 font-black",
-      btnStyle: "bg-[#280540] hover:bg-[#1a022b] text-amber-300 font-black shadow-md"
+      isDark: true,
+      cardBg: "bg-gradient-to-br from-[#021b22] via-[#04313e] to-[#010e11] text-white border border-teal-500/30 shadow-2xl",
+      titleColor: "text-white group-hover:text-teal-300 font-extrabold",
+      authorColor: "text-teal-100",
+      subColor: "text-teal-200/80",
+      synopsisColor: "text-slate-300",
+      metaColor: "text-teal-300 font-bold",
+      btnStyle: "bg-teal-400 hover:bg-teal-300 text-slate-950 font-black shadow-md"
+    },
+    // 6. Dark Espresso Roast & Smoked Charcoal (Dark & High-Contrast)
+    {
+      isDark: true,
+      cardBg: "bg-gradient-to-br from-[#1c0d05] via-[#2e1709] to-[#0f0602] text-white border border-amber-600/30 shadow-2xl",
+      titleColor: "text-white group-hover:text-amber-300 font-extrabold",
+      authorColor: "text-amber-100",
+      subColor: "text-amber-200/80",
+      synopsisColor: "text-slate-300",
+      metaColor: "text-amber-300 font-bold",
+      btnStyle: "bg-amber-400 hover:bg-amber-300 text-slate-950 font-black shadow-md"
     }
   ];
 
@@ -215,12 +342,12 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
         {nextUrl && <link rel="next" href={nextUrl} />}
       </Helmet>
       
-      {/* GALLERY SEARCH & FILTER BAR - BENTO ROYAL PURPLE */}
-      <div className="bg-[#290542] border border-purple-600/40 rounded-3xl p-4 sm:p-5 shadow-2xl">
+      {/* GALLERY SEARCH & FILTER BAR - RETAINS DARK CARD BACKGROUND IN LIGHT MODE */}
+      <div className="border border-purple-600/40 rounded-3xl p-4 sm:p-5 transition-colors duration-300 bg-[#290542] shadow-2xl">
         {/* SEARCH & GENRE FILTER */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-purple-300/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-300/70" />
             <input
               type="text"
               placeholder="Cari judul naskah, sinopsis, atau nama penulis..."
@@ -229,7 +356,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-[#180228] border border-purple-600/50 focus:border-amber-400 focus:bg-[#1f0330] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-purple-300/50 focus:outline-none font-medium transition"
+              className="w-full rounded-xl pl-10 pr-4 py-2 text-xs font-medium transition focus:outline-none bg-[#180228] border border-purple-600/50 focus:border-amber-400 focus:bg-[#1f0330] text-white placeholder-purple-300/50"
             />
           </div>
 
@@ -240,7 +367,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
                 setSelectedGenre(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full sm:w-auto bg-[#180228] border border-purple-600/50 focus:border-amber-400 rounded-xl px-3.5 py-2 text-xs text-purple-100 font-bold focus:outline-none transition"
+              className="w-full sm:w-auto rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none transition bg-[#180228] border border-purple-600/50 focus:border-amber-400 text-purple-100"
             >
               {genresList.map((g) => (
                 <option key={g} value={g} className="bg-[#1a022b] text-white">
@@ -254,42 +381,42 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
 
       {/* ASYMMETRIC BENTO GRID CONTAINER WITH DYNAMIC CARD DIMENSIONS & DENSE AUTO-PACKING */}
       {current12Cards.length === 0 ? (
-        <div className="bg-[#290542] border border-purple-600/40 rounded-3xl p-12 text-center space-y-3 shadow-2xl">
-          <BookOpen className="w-10 h-10 text-purple-400/50 mx-auto" />
+        <div className="border border-purple-600/40 rounded-3xl p-12 text-center space-y-3 transition-colors bg-[#290542] shadow-2xl">
+          <BookOpen className="w-10 h-10 mx-auto text-purple-400/60" />
           <h3 className="text-base font-bold text-white">Tidak Ada Naskah Yang Cocok</h3>
-          <p className="text-xs text-purple-200/70 max-w-md mx-auto">
+          <p className="text-xs max-w-md mx-auto text-purple-200/80">
             Coba ubah kata kunci pencarian atau ganti pilihan filter genre naskah di atas.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 grid-flow-dense auto-rows-fr">
-          {/* INTEGRATED FEATURED HERO CARD (CARD #0) ON PAGE 1 */}
+          {/* INTEGRATED FEATURED HERO CARD (CARD #0) ON PAGE 1 - DARK JEWEL TONE PRESERVED IN LIGHT MODE */}
           {validPage === 1 && (
-            <div className="md:col-span-2 lg:col-span-2 bg-gradient-to-r from-[#3b0854] via-[#2d0542] to-[#1e022b] border border-purple-500/30 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-4 shadow-2xl relative overflow-hidden group">
+            <div className="md:col-span-2 lg:col-span-2 rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-4 relative overflow-hidden group transition-colors duration-300 bg-gradient-to-r from-[#3b0854] via-[#2d0542] to-[#1e022b] border border-purple-500/30 text-white shadow-2xl">
               {/* Glow Deco */}
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-pink-600/20 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-pink-600/20" />
+              <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-amber-500/15" />
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-pink-600/30 border border-pink-400/40 text-pink-200 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center space-x-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                <span className="px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center space-x-1.5 border bg-pink-600/30 border-pink-400/40 text-pink-200">
+                  <BookOpen className="w-3.5 h-3.5 shrink-0 text-pink-400" />
                   <span>ALAT BANTU PENULISAN & CO-AUTHORSHIP</span>
                 </span>
-                <span className="bg-amber-400/20 border border-amber-400/40 text-amber-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border bg-amber-400/20 border-amber-400/40 text-amber-300">
                   {totalItems} NASKAH TERPUBLIKASI
                 </span>
               </div>
 
               <div className="space-y-2">
-                <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                <h1 className="text-xl sm:text-3xl font-black tracking-tight leading-tight text-white">
                   Alat Kerja Penulis Individual dan Kolaboratif
                 </h1>
-                <p className="text-purple-200/90 text-xs sm:text-sm leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm leading-relaxed font-medium text-purple-200/90">
                   Selamat datang di Studio Buku — wadah penulisan dan penerbitan naskah kolaboratif. Bebas dibaca oleh publik dan terindeks penuh oleh Googlebot.
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-purple-500/20 flex items-center justify-between text-xs text-purple-300 font-bold">
+              <div className="pt-3 border-t border-purple-500/20 flex items-center justify-between text-xs font-bold text-purple-300">
                 <span>Co-Authorship Penulisan Buku</span>
                 <span className="text-amber-400 font-black">100% Free</span>
               </div>
@@ -313,11 +440,19 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
             const isFeaturedCard = idx === 0;
             const isWideCard = idx === 3 || idx === 8;
 
-            const titleFontSizeClass = isFeaturedCard
-              ? "text-2xl md:text-3xl font-extrabold"
-              : isWideCard
-              ? "text-lg sm:text-xl font-bold"
-              : "text-base sm:text-lg font-bold";
+            const isOddCard = (idx + 1) % 2 === 1;
+
+            const titleFontSizeClass = isOddCard
+              ? (isFeaturedCard
+                  ? "text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black"
+                  : isWideCard
+                  ? "text-xl sm:text-2xl md:text-3xl font-black"
+                  : "text-lg sm:text-xl md:text-2xl font-black")
+              : (isFeaturedCard
+                  ? "text-2xl md:text-3xl font-extrabold"
+                  : isWideCard
+                  ? "text-lg sm:text-xl font-bold"
+                  : "text-base sm:text-lg font-bold");
 
             const excerptFontSizeClass = isFeaturedCard
               ? "text-sm md:text-base leading-relaxed"
@@ -332,10 +467,16 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
             // Dynamic cover placeholder seed
             const coverSeedUrl = `https://picsum.photos/seed/buku-${project.id}/400/600`;
 
-            // Extract Manuscript Text Excerpt for Editorial Quote with Dynamic Length & Absolute Sanitization
-            const maxExcerptChars = isFeaturedCard ? 360 : isWideCard ? 200 : 110;
-            const rawExcerptSource = projChapters[0]?.content || project.synopsis || "";
-            const manuscriptExcerpt = sanitizeManuscriptExcerpt(rawExcerptSource, maxExcerptChars);
+            // Extract Manuscript Text Excerpt: minimum 50 characters taken from the start of Chapter 1 ("awal karya")
+            const sortedChapters = [...projChapters].sort((a, b) => (a.order ?? 1) - (b.order ?? 1));
+            const firstChapterContent = sortedChapters[0]?.content || "";
+            const maxExcerptChars = isFeaturedCard ? 360 : isWideCard ? 220 : 130;
+            const manuscriptExcerpt = extractManuscriptExcerpt(firstChapterContent, project.synopsis || "", 50, maxExcerptChars);
+            
+            // For the first card (Card #1 / Featured Card), provide 3 rich quote paragraphs from chapters 1, 2, and 3 (or 3x words if 1 chapter)
+            const firstCardThreeParagraphs = isFeaturedCard
+              ? extractFirstCardThreeParagraphExcerpt(sortedChapters, project.synopsis || "")
+              : [];
 
             // Author initials & avatar color
             const initials = (project.ownerName || "PS")
@@ -356,97 +497,204 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
             ];
             const avatarColor = avatarColors[idx % avatarColors.length];
 
+            const displayTitle = getCardDisplayTitle(project, idx);
+
             return (
               <article
                 key={project.id}
-                className={`${theme.cardBg} ${spanClass} rounded-3xl overflow-hidden transition-all duration-300 flex flex-col sm:flex-row shadow-2xl border border-white/10 group hover:scale-[1.01] transform`}
+                className={`${theme.cardBg} ${spanClass} rounded-3xl overflow-hidden transition-all duration-300 flex flex-col shadow-2xl border border-white/10 group hover:scale-[1.01] transform`}
               >
-                {/* Visual Cover Strip (Prominent Cover Thumbnail ~38% Width) */}
-                <div className="relative w-full sm:w-[38%] shrink-0 min-h-[170px] sm:min-h-full overflow-hidden bg-slate-950">
-                  <img
-                    src={coverSeedUrl}
-                    alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-85"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/20" />
-                  
-                  {/* GLASSMORPHISM BADGE FOR GENRE */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                    <span className="bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-300/40 shadow-xl">
-                      {project.genre || "Fiksi"}
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-3 left-3 text-[10px] font-bold text-white/90 flex items-center space-x-1">
-                    <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>Studio Buku</span>
-                  </div>
-                </div>
-
-                {/* Right Side Content Panel with Whitespace & Adaptive Contrast */}
-                <div className="p-6 space-y-3.5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2.5">
-                    {/* Author Branding */}
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-6 h-6 rounded-full ${avatarColor} flex items-center justify-center font-black text-[10px] shadow-sm shrink-0`}>
-                        {initials}
+                {isOddCard ? (
+                  // ODD CARD: Image spans full height on the left, and the Title Header spans all 12 columns across row 1
+                  // so the left portion of the title physically sits ON TOP OF THE IMAGE ("sebagian judul ada di atas gambar")
+                  <div className="grid grid-cols-1 sm:grid-cols-12 grid-rows-[auto_1fr] relative h-full flex-1">
+                    {/* Visual Cover Strip: spans row 1 & row 2 on cols 1-5 (Left ~42%) from very top to bottom */}
+                    <div className="col-span-1 sm:col-span-5 sm:row-span-2 sm:row-start-1 sm:col-start-1 relative overflow-hidden bg-slate-950 min-h-[180px] sm:min-h-full">
+                      <img
+                        src={coverSeedUrl}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-85"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+                      
+                      <div className="absolute bottom-3 left-3 text-[10px] font-bold text-white/90 flex items-center space-x-1 z-10 pointer-events-none">
+                        <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Studio Buku</span>
                       </div>
-                      <span className={`text-xs ${theme.authorColor} truncate font-bold`}>
-                        {project.ownerName || "Penulis Studio"}
-                      </span>
-                      <span className="text-xs shrink-0" title="Penulis Studio Buku">
-                        ✍️
-                      </span>
                     </div>
 
-                    {/* Title with Dynamic Sizing per Bento Card Type */}
-                    <h3 className={`${titleFontSizeClass} ${theme.titleColor} leading-snug tracking-tight transition`}>
-                      <a href={`/p/${projSlug}`} className="hover:underline">
-                        {project.title}
-                      </a>
-                    </h3>
+                    {/* Full-Width Title Header: spans ALL 12 columns in row 1, crossing directly on top of the image on the left! */}
+                    <div className="col-span-1 sm:col-span-12 sm:row-start-1 sm:col-start-1 z-20 w-full p-5 sm:p-6 pb-3.5 bg-gradient-to-r from-black/85 via-black/70 to-black/30 backdrop-blur-[2px] border-b border-white/15 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <div className={`w-6 h-6 rounded-full ${avatarColor} flex items-center justify-center font-black text-[10px] shadow-sm shrink-0`}>
+                            {initials}
+                          </div>
+                          <span className={`text-xs ${theme.authorColor} truncate font-bold drop-shadow-sm`}>
+                            {project.ownerName || "Penulis Studio"}
+                          </span>
+                          <span className="text-xs shrink-0" title="Penulis Studio Buku">✍️</span>
+                        </div>
 
-                    {project.subtitle && (
-                      <p className={`${subtitleFontSizeClass} ${theme.subColor} font-serif italic leading-relaxed line-clamp-1`}>
-                        {project.subtitle}
-                      </p>
-                    )}
+                        <span className="bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-300/40 shadow-xl shrink-0">
+                          {project.genre || "Fiksi"}
+                        </span>
+                      </div>
 
-                    {/* Editorial Text Excerpt with Dynamic Sizing */}
-                    <blockquote className={`${excerptFontSizeClass} font-serif italic pl-2.5 border-l-2 ${theme.isDark ? "border-amber-300/60 text-purple-100/90" : "border-slate-950/50 text-slate-950/90 font-semibold"} my-1.5`}>
-                      “{manuscriptExcerpt}”
-                    </blockquote>
-                  </div>
+                      {/* Enlarged Title Spanning Full Width of Card & Overlaying the Image */}
+                      <h3
+                        className={`${titleFontSizeClass} ${theme.titleColor} leading-tight tracking-tight transition line-clamp-3 overflow-hidden drop-shadow-md`}
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden"
+                        }}
+                        title={displayTitle}
+                      >
+                        <a href={`/p/${projSlug}`} className="no-underline hover:no-underline">
+                          {displayTitle}
+                        </a>
+                      </h3>
 
-                  {/* Metadata & Clean "Baca Naskah" Button with Lucide Vector Icon */}
-                  <div className="pt-3 border-t border-black/10 sm:border-white/15 space-y-3">
-                    <div className={`flex items-center justify-between text-[11px] font-bold ${theme.metaColor}`}>
-                      <span>{projChapters.length} Bab Terbit</span>
-                      <span aria-hidden="true" className="opacity-70">·</span>
-                      <span className="font-mono">{wordCount.toLocaleString("id-ID")} Kata</span>
+                      {project.subtitle && !displayTitle.includes(project.subtitle) && (
+                        <p className={`${subtitleFontSizeClass} ${theme.subColor} font-serif italic leading-relaxed line-clamp-1`}>
+                          {project.subtitle}
+                        </p>
+                      )}
                     </div>
 
-                    {/* Action Button: Clean "Baca Naskah" with Vector Lucide Icon */}
-                    <a
-                      href={`/p/${projSlug}`}
-                      className={`w-full ${theme.btnStyle} rounded-full text-xs font-black flex items-center justify-center space-x-2 transition text-center transform active:scale-95 cursor-pointer py-2.5 px-4 shadow-md`}
-                    >
-                      <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                      <span>Baca Naskah</span>
-                    </a>
+                    {/* Right Side Content Panel: spans row 2, cols 6-12 */}
+                    <div className="col-span-1 sm:col-span-7 sm:row-start-2 sm:col-start-6 p-5 sm:p-6 flex flex-col justify-between space-y-3 z-10">
+                      {isFeaturedCard ? (
+                        <blockquote className={`${excerptFontSizeClass} font-serif italic pl-3 border-l-2 border-amber-300/80 text-slate-200/95 space-y-2 my-1 leading-relaxed`}>
+                          {firstCardThreeParagraphs.map((para, pIdx) => (
+                            <p key={pIdx}>
+                              “{para}”
+                            </p>
+                          ))}
+                        </blockquote>
+                      ) : (
+                        <blockquote className={`${excerptFontSizeClass} font-serif italic pl-2.5 border-l-2 border-amber-300/60 text-slate-200/90 my-1 line-clamp-3 leading-relaxed`}>
+                          “{manuscriptExcerpt}”
+                        </blockquote>
+                      )}
+
+                      <div className="pt-3 border-t border-black/10 sm:border-white/15">
+                        <a
+                          href={`/p/${projSlug}`}
+                          className={`w-full ${theme.btnStyle} rounded-full text-xs font-black flex items-center justify-center space-x-2 transition text-center transform active:scale-95 cursor-pointer py-2.5 px-4 shadow-md`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                          <span>Baca Naskah</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  // EVEN CARD: Split Layout with Image on Left and Content on Right
+                  <div className="flex flex-col sm:flex-row flex-1 h-full">
+                    {/* Visual Cover Strip (Prominent Cover Thumbnail ~38% Width) */}
+                    <div className="relative w-full sm:w-[38%] shrink-0 min-h-[170px] sm:min-h-full overflow-hidden bg-slate-950">
+                      <img
+                        src={coverSeedUrl}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-85"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/20" />
+                      
+                      {/* GLASSMORPHISM BADGE FOR GENRE */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                        <span className="bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg uppercase tracking-wider border border-amber-300/40 shadow-xl">
+                          {project.genre || "Fiksi"}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-3 left-3 text-[10px] font-bold text-white/90 flex items-center space-x-1">
+                        <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Studio Buku</span>
+                      </div>
+                    </div>
+
+                    {/* Right Side Content Panel with Whitespace & Adaptive Contrast */}
+                    <div className="p-6 space-y-3.5 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2.5">
+                        {/* Author Branding */}
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-6 h-6 rounded-full ${avatarColor} flex items-center justify-center font-black text-[10px] shadow-sm shrink-0`}>
+                            {initials}
+                          </div>
+                          <span className={`text-xs ${theme.authorColor} truncate font-bold`}>
+                            {project.ownerName || "Penulis Studio"}
+                          </span>
+                          <span className="text-xs shrink-0" title="Penulis Studio Buku">
+                            ✍️
+                          </span>
+                        </div>
+
+                        {/* Title with Dynamic Sizing per Bento Card Type & Strictly Pruned to Max 3 Lines */}
+                        <h3
+                          className={`${titleFontSizeClass} ${theme.titleColor} leading-snug tracking-tight transition line-clamp-3 overflow-hidden`}
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden"
+                          }}
+                          title={displayTitle}
+                        >
+                          <a href={`/p/${projSlug}`} className="no-underline hover:no-underline">
+                            {displayTitle}
+                          </a>
+                        </h3>
+
+                        {project.subtitle && !displayTitle.includes(project.subtitle) && (
+                          <p className={`${subtitleFontSizeClass} ${theme.subColor} font-serif italic leading-relaxed line-clamp-1`}>
+                            {project.subtitle}
+                          </p>
+                        )}
+
+                        {/* Editorial Text Excerpt with Dynamic Sizing (Min 50 Chars from Start of Work) */}
+                        {isFeaturedCard ? (
+                          <blockquote className={`${excerptFontSizeClass} font-serif italic pl-3 border-l-2 border-amber-300/80 text-slate-200/95 space-y-2 my-1 leading-relaxed`}>
+                            {firstCardThreeParagraphs.map((para, pIdx) => (
+                              <p key={pIdx}>
+                                “{para}”
+                              </p>
+                            ))}
+                          </blockquote>
+                        ) : (
+                          <blockquote className={`${excerptFontSizeClass} font-serif italic pl-2.5 border-l-2 border-amber-300/60 text-slate-200/90 my-1.5 line-clamp-3 leading-relaxed`}>
+                            “{manuscriptExcerpt}”
+                          </blockquote>
+                        )}
+                      </div>
+
+                      {/* Action Button: Clean "Baca Naskah" with Vector Lucide Icon */}
+                      <div className="pt-3 border-t border-black/10 sm:border-white/15">
+                        <a
+                          href={`/p/${projSlug}`}
+                          className={`w-full ${theme.btnStyle} rounded-full text-xs font-black flex items-center justify-center space-x-2 transition text-center transform active:scale-95 cursor-pointer py-2.5 px-4 shadow-md`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                          <span>Baca Naskah</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </article>
             );
           })}
         </div>
       )}
 
-      {/* CRAWLABLE BENTO PAGINATION CONTROLS FOR GOOGLEBOT */}
+      {/* CRAWLABLE BENTO PAGINATION CONTROLS FOR GOOGLEBOT - DARK BACKGROUND PRESERVED IN LIGHT MODE */}
       {totalPages > 1 && (
-        <nav aria-label="Paginasi Naskah" className="bg-[#290542] border border-purple-600/40 rounded-3xl p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-purple-200/90 font-medium">
+        <nav aria-label="Paginasi Naskah" className="border border-purple-600/40 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors duration-300 bg-[#290542] shadow-2xl">
+          <div className="text-xs font-medium text-purple-200/90">
             Menampilkan <span className="font-bold text-amber-300">{startIndex + 1}</span> -{" "}
             <span className="font-bold text-amber-300">
               {Math.min(startIndex + ITEMS_PER_PAGE, totalItems)}
@@ -459,7 +707,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
             <a
               href={validPage > 2 ? `/?page=${validPage - 1}` : "/"}
               onClick={(e) => validPage > 1 && handlePageChange(validPage - 1, e)}
-              className={`p-2.5 rounded-2xl border border-purple-600/50 bg-[#180228] text-purple-100 hover:bg-purple-800/60 transition ${
+              className={`p-2.5 rounded-2xl border transition border-purple-600/50 bg-[#180228] text-purple-100 hover:bg-purple-800/60 ${
                 validPage === 1 ? "opacity-40 pointer-events-none" : "cursor-pointer"
               }`}
               aria-label="Halaman Sebelumnya"
@@ -478,7 +726,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
                   onClick={(e) => handlePageChange(pageNum, e)}
                   className={`px-4 py-2 rounded-2xl text-xs font-black transition ${
                     isActive
-                      ? "bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/30 font-black scale-105"
+                      ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/30 font-black scale-105"
                       : "bg-[#180228] text-purple-200 hover:bg-purple-800/60 border border-purple-600/40"
                   }`}
                   aria-current={isActive ? "page" : undefined}
@@ -492,7 +740,7 @@ export const PublicProjectGallery: React.FC<PublicProjectGalleryProps> = ({
             <a
               href={`/?page=${Math.min(totalPages, validPage + 1)}`}
               onClick={(e) => validPage < totalPages && handlePageChange(validPage + 1, e)}
-              className={`p-2.5 rounded-2xl border border-purple-600/50 bg-[#180228] text-purple-100 hover:bg-purple-800/60 transition ${
+              className={`p-2.5 rounded-2xl border transition border-purple-600/50 bg-[#180228] text-purple-100 hover:bg-purple-800/60 ${
                 validPage === totalPages ? "opacity-40 pointer-events-none" : "cursor-pointer"
               }`}
               aria-label="Halaman Selanjutnya"
