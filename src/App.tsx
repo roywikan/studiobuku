@@ -152,15 +152,19 @@ export default function App() {
         data = cached ? JSON.parse(cached) : initialDefaultDb;
       }
 
-      if (data && Array.isArray(data.projects)) {
+      if (data) {
+        if (!Array.isArray(data.projects)) data.projects = [];
         data.projects = data.projects.map(normalizeProject);
-      }
-
-      if (data && Array.isArray(data.chapters)) {
+        if (!Array.isArray(data.chapters)) data.chapters = [];
         data.chapters = data.chapters.map(c => ({
           ...c,
           content: cleanChapterContent(c.content)
         }));
+        if (!Array.isArray(data.authors)) data.authors = [];
+        if (!Array.isArray(data.ideas)) data.ideas = [];
+        if (!Array.isArray(data.logs)) data.logs = [];
+        if (!Array.isArray(data.annotations)) data.annotations = [];
+        if (!Array.isArray(data.glossary)) data.glossary = [];
       }
 
       setDb(data);
@@ -369,7 +373,13 @@ export default function App() {
   // Multi-user isolation in Cloudflare D1:
   // - Super Admin (roy.wikan@gmail.com): Access & manage all projects (bypass isolation)
   // - Regular Writers: Strictly isolated to projects they own + projects where they are co-authors
-  const authorProjects = (db.projects || []).filter((p) => {
+  const safeProjects = Array.isArray(db?.projects) ? db.projects : (Array.isArray(initialDefaultDb?.projects) ? initialDefaultDb.projects : []);
+  const safeChapters = Array.isArray(db?.chapters) ? db.chapters : (Array.isArray(initialDefaultDb?.chapters) ? initialDefaultDb.chapters : []);
+  const safeIdeas = Array.isArray(db?.ideas) ? db.ideas : [];
+  const safeLogs = Array.isArray(db?.logs) ? db.logs : [];
+
+  const authorProjects = safeProjects.filter((p) => {
+    if (!p) return false;
     if (isSuperAdmin) return true; // Super Admin access all
     if (!userSession) return !p.isPrivate; // Guest: public only
 
@@ -404,15 +414,15 @@ export default function App() {
   });
 
   const project =
-    authorProjects.find((p) => p.id === selectedProjectId) ||
+    authorProjects.find((p) => p && p.id === selectedProjectId) ||
     authorProjects[0] ||
-    db.projects.find((p) => p.id === selectedProjectId) ||
-    db.projects[0] ||
+    safeProjects.find((p) => p && p.id === selectedProjectId) ||
+    safeProjects[0] ||
     initialDefaultDb.projects[0];
 
-  const currentProjectChapters = db.chapters.filter((c) => c.projectId === project.id);
-  const currentProjectIdeas = db.ideas.filter((i) => i.projectId === project.id);
-  const currentProjectLogs = db.logs.filter((l) => l.projectId === project.id);
+  const currentProjectChapters = safeChapters.filter((c) => c && c.projectId === project?.id);
+  const currentProjectIdeas = safeIdeas.filter((i) => i && i.projectId === project?.id);
+  const currentProjectLogs = safeLogs.filter((l) => l && l.projectId === project?.id);
 
   // Handlers for Projects - INSTANT UI RESPONSE
   const handleCreateProject = async (newProjData: { title: string; subtitle: string; genre: string; synopsis: string; isPrivate?: boolean }) => {
