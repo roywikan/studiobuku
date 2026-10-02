@@ -30,8 +30,8 @@ export const StudioBukuLogo: React.FC<StudioBukuLogoProps> = ({
     lg: "text-2xl"
   }[size];
 
-  const textColor = variant === "light" ? "text-slate-900" : "text-white";
-  const taglineColor = variant === "light" ? "text-amber-800" : "text-amber-300/90";
+  const textColor = variant === "light" ? "text-slate-950 font-black" : "text-white";
+  const taglineColor = variant === "light" ? "text-amber-700 font-extrabold" : "text-amber-300/90";
 
   const logoSrc = size === "sm" 
     ? "/studio-buku-logo-box-40-42.jpg" 
