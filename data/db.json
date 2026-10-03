@@ -6238,7 +6238,908 @@
     }
   ],
   "ideas": [],
-  "logs": [],
+  "logs": [
+    {
+      "id": "log_1790998503879",
+      "projectId": "proj_1",
+      "chapterId": null,
+      "chapterTitle": "Bab 1",
+      "authorName": "Roy Wikan",
+      "action": "Uji coba pencatatan revisi bab",
+      "timestamp": "2026-10-03T03:35:03.879Z"
+    },
+    {
+      "id": "log_proj_1_4",
+      "projectId": "proj_1",
+      "chapterId": "chap_proj_1_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-10-02T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_31_4",
+      "projectId": "proj_31",
+      "chapterId": "chap_proj_31_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-10-02T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_1_3",
+      "projectId": "proj_1",
+      "chapterId": "chap_proj_1_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_2_4",
+      "projectId": "proj_2",
+      "chapterId": "chap_proj_2_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_31_3",
+      "projectId": "proj_31",
+      "chapterId": "chap_proj_31_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_32_4",
+      "projectId": "proj_32",
+      "chapterId": "chap_proj_32_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_1_2",
+      "projectId": "proj_1",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-30T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_31_2",
+      "projectId": "proj_31",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-30T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_1_1",
+      "projectId": "proj_1",
+      "chapterId": "chap_proj_1_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Gema Di Ujung Senja\"",
+      "timestamp": "2026-09-30T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_31_1",
+      "projectId": "proj_31",
+      "chapterId": "chap_proj_31_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Kerajaan Air Di Lembah Bogowonto\"",
+      "timestamp": "2026-09-30T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_2_3",
+      "projectId": "proj_2",
+      "chapterId": "chap_proj_2_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-30T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_3_4",
+      "projectId": "proj_3",
+      "chapterId": "chap_proj_3_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-30T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_32_3",
+      "projectId": "proj_32",
+      "chapterId": "chap_proj_32_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Bagus Setiawan",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-30T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_33_4",
+      "projectId": "proj_33",
+      "chapterId": "chap_proj_33_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-30T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_2_2",
+      "projectId": "proj_2",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-29T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_32_2",
+      "projectId": "proj_32",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-29T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_2_1",
+      "projectId": "proj_2",
+      "chapterId": "chap_proj_2_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Lembayung Kotabaru\"",
+      "timestamp": "2026-09-29T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_32_1",
+      "projectId": "proj_32",
+      "chapterId": "chap_proj_32_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Bagus Setiawan",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Sketsa Kota Tua Batavia\"",
+      "timestamp": "2026-09-29T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_3_3",
+      "projectId": "proj_3",
+      "chapterId": "chap_proj_3_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-29T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_4_4",
+      "projectId": "proj_4",
+      "chapterId": "chap_proj_4_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-29T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_33_3",
+      "projectId": "proj_33",
+      "chapterId": "chap_proj_33_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Siti Rahmania",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-29T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_34_4",
+      "projectId": "proj_34",
+      "chapterId": "chap_proj_34_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-29T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_3_2",
+      "projectId": "proj_3",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-28T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_33_2",
+      "projectId": "proj_33",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-28T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_3_1",
+      "projectId": "proj_3",
+      "chapterId": "chap_proj_3_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Sandi Dibalik Candi\"",
+      "timestamp": "2026-09-28T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_33_1",
+      "projectId": "proj_33",
+      "chapterId": "chap_proj_33_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Siti Rahmania",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Skripsi Lima Tahun Dan Kopi Dingin\"",
+      "timestamp": "2026-09-28T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_4_3",
+      "projectId": "proj_4",
+      "chapterId": "chap_proj_4_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-28T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_5_4",
+      "projectId": "proj_5",
+      "chapterId": "chap_proj_5_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-28T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_34_3",
+      "projectId": "proj_34",
+      "chapterId": "chap_proj_34_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Bagus Setiawan",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-28T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_35_4",
+      "projectId": "proj_35",
+      "chapterId": "chap_proj_35_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-28T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_4_2",
+      "projectId": "proj_4",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-27T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_34_2",
+      "projectId": "proj_34",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-27T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_4_1",
+      "projectId": "proj_4",
+      "chapterId": "chap_proj_4_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Bunga Rumput Samudra\"",
+      "timestamp": "2026-09-27T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_34_1",
+      "projectId": "proj_34",
+      "chapterId": "chap_proj_34_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Bagus Setiawan",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Jejak Perdagangan Rempah Di Maluku\"",
+      "timestamp": "2026-09-27T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_5_3",
+      "projectId": "proj_5",
+      "chapterId": "chap_proj_5_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-27T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_6_4",
+      "projectId": "proj_6",
+      "chapterId": "chap_proj_6_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-27T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_35_3",
+      "projectId": "proj_35",
+      "chapterId": "chap_proj_35_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-27T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_36_4",
+      "projectId": "proj_36",
+      "chapterId": "chap_proj_36_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-27T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_5_2",
+      "projectId": "proj_5",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-26T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_35_2",
+      "projectId": "proj_35",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-26T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_5_1",
+      "projectId": "proj_5",
+      "chapterId": "chap_proj_5_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Pelaut Malam Dan Bintang\"",
+      "timestamp": "2026-09-26T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_35_1",
+      "projectId": "proj_35",
+      "chapterId": "chap_proj_35_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Rahasia Rumah Panggung Bugis\"",
+      "timestamp": "2026-09-26T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_6_3",
+      "projectId": "proj_6",
+      "chapterId": "chap_proj_6_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-26T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_7_4",
+      "projectId": "proj_7",
+      "chapterId": "chap_proj_7_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-26T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_36_3",
+      "projectId": "proj_36",
+      "chapterId": "chap_proj_36_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Bagus Setiawan",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-26T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_37_4",
+      "projectId": "proj_37",
+      "chapterId": "chap_proj_37_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-26T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_6_2",
+      "projectId": "proj_6",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-25T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_36_2",
+      "projectId": "proj_36",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-25T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_6_1",
+      "projectId": "proj_6",
+      "chapterId": "chap_proj_6_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Cahaya Di Balik Kabut\"",
+      "timestamp": "2026-09-25T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_36_1",
+      "projectId": "proj_36",
+      "chapterId": "chap_proj_36_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Bagus Setiawan",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Metode Penelitian Kualitatif Kritis\"",
+      "timestamp": "2026-09-25T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_7_3",
+      "projectId": "proj_7",
+      "chapterId": "chap_proj_7_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_8_4",
+      "projectId": "proj_8",
+      "chapterId": "chap_proj_8_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_37_3",
+      "projectId": "proj_37",
+      "chapterId": "chap_proj_37_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_38_4",
+      "projectId": "proj_38",
+      "chapterId": "chap_proj_38_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_7_2",
+      "projectId": "proj_7",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-24T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_37_2",
+      "projectId": "proj_37",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-24T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_7_1",
+      "projectId": "proj_7",
+      "chapterId": "chap_proj_7_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Detektif Batavia 1920\"",
+      "timestamp": "2026-09-24T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_37_1",
+      "projectId": "proj_37",
+      "chapterId": "chap_proj_37_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Harmoni Gong Dan Angklung Parahyangan\"",
+      "timestamp": "2026-09-24T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_8_3",
+      "projectId": "proj_8",
+      "chapterId": "chap_proj_8_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Bagus Setiawan",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_9_4",
+      "projectId": "proj_9",
+      "chapterId": "chap_proj_9_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_38_3",
+      "projectId": "proj_38",
+      "chapterId": "chap_proj_38_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_39_4",
+      "projectId": "proj_39",
+      "chapterId": "chap_proj_39_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_8_2",
+      "projectId": "proj_8",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-23T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_38_2",
+      "projectId": "proj_38",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-23T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_8_1",
+      "projectId": "proj_8",
+      "chapterId": "chap_proj_8_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Bagus Setiawan",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Riset Kecerdasan Buatan & Etika\"",
+      "timestamp": "2026-09-23T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_38_1",
+      "projectId": "proj_38",
+      "chapterId": "chap_proj_38_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Melintasi Garis Khatulistiwa Pontianak\"",
+      "timestamp": "2026-09-23T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_9_3",
+      "projectId": "proj_9",
+      "chapterId": "chap_proj_9_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Siti Rahmania",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_10_4",
+      "projectId": "proj_10",
+      "chapterId": "chap_proj_10_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_39_3",
+      "projectId": "proj_39",
+      "chapterId": "chap_proj_39_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_40_4",
+      "projectId": "proj_40",
+      "chapterId": "chap_proj_40_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-23T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_9_2",
+      "projectId": "proj_9",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-22T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_39_2",
+      "projectId": "proj_39",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-22T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_9_1",
+      "projectId": "proj_9",
+      "chapterId": "chap_proj_9_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Siti Rahmania",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Jejak Langkah Di Pasar Beringharjo\"",
+      "timestamp": "2026-09-22T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_39_1",
+      "projectId": "proj_39",
+      "chapterId": "chap_proj_39_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Kisah Pendaki Di Puncak Rinjani\"",
+      "timestamp": "2026-09-22T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_10_3",
+      "projectId": "proj_10",
+      "chapterId": "chap_proj_10_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-22T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_11_4",
+      "projectId": "proj_11",
+      "chapterId": "chap_proj_11_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-22T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_40_3",
+      "projectId": "proj_40",
+      "chapterId": "chap_proj_40_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Siti Rahmania",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-22T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_41_4",
+      "projectId": "proj_41",
+      "chapterId": "chap_proj_41_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-22T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_10_2",
+      "projectId": "proj_10",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-21T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_40_2",
+      "projectId": "proj_40",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-21T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_10_1",
+      "projectId": "proj_10",
+      "chapterId": "chap_proj_10_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Rahasia Kedai Kopi Tua\"",
+      "timestamp": "2026-09-21T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_40_1",
+      "projectId": "proj_40",
+      "chapterId": "chap_proj_40_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Siti Rahmania",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Komunikasi Interpersonal Di Era Siber\"",
+      "timestamp": "2026-09-21T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_11_3",
+      "projectId": "proj_11",
+      "chapterId": "chap_proj_11_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Kirana Maharani",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_12_4",
+      "projectId": "proj_12",
+      "chapterId": "chap_proj_12_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_41_3",
+      "projectId": "proj_41",
+      "chapterId": "chap_proj_41_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_42_4",
+      "projectId": "proj_42",
+      "chapterId": "chap_proj_42_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Siti Rahmania",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_11_2",
+      "projectId": "proj_11",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-20T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_41_2",
+      "projectId": "proj_41",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Kirana Maharani",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-20T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_11_1",
+      "projectId": "proj_11",
+      "chapterId": "chap_proj_11_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Kirana Maharani",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Babad Serayu Dan Sungai Jiwa\"",
+      "timestamp": "2026-09-20T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_41_1",
+      "projectId": "proj_41",
+      "chapterId": "chap_proj_41_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Senandung Hujan Di Lembah Harau\"",
+      "timestamp": "2026-09-20T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_12_3",
+      "projectId": "proj_12",
+      "chapterId": "chap_proj_12_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Rian Hidayat",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_13_4",
+      "projectId": "proj_13",
+      "chapterId": "chap_proj_13_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_42_3",
+      "projectId": "proj_42",
+      "chapterId": "chap_proj_42_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Bagus Setiawan",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_43_4",
+      "projectId": "proj_43",
+      "chapterId": "chap_proj_43_6",
+      "chapterTitle": "Bab 6: Analisis Komparatif Dan Pembahasan",
+      "authorName": "Bagus Setiawan",
+      "action": "Review editorial naskah bersama tim co-author Studio Buku",
+      "timestamp": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "log_proj_12_2",
+      "projectId": "proj_12",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_42_2",
+      "projectId": "proj_42",
+      "chapterId": null,
+      "chapterTitle": "Kerangka Proyek Naskah",
+      "authorName": "Rian Hidayat",
+      "action": "Penyusunan outline 8 bab dan sinkronisasi sub-tema",
+      "timestamp": "2026-09-19T03:00:00.000Z"
+    },
+    {
+      "id": "log_proj_12_1",
+      "projectId": "proj_12",
+      "chapterId": "chap_proj_12_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Rian Hidayat",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Menulis Tanpa Rasa Takut\"",
+      "timestamp": "2026-09-19T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_42_1",
+      "projectId": "proj_42",
+      "chapterId": "chap_proj_42_1",
+      "chapterTitle": "Bab 1: Awal Mula Dan Latar Peristiwa",
+      "authorName": "Bagus Setiawan",
+      "action": "Inisiasi draf naskah & penulisan adegan pembuka \"Hukum Adat Dan Keadilan Pesisir\"",
+      "timestamp": "2026-09-19T00:30:00.000Z"
+    },
+    {
+      "id": "log_proj_13_3",
+      "projectId": "proj_13",
+      "chapterId": "chap_proj_13_3",
+      "chapterTitle": "Bab 3: Dialektika Gagasan Dan Telaah Mendalam",
+      "authorName": "Bagus Setiawan",
+      "action": "Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi",
+      "timestamp": "2026-09-19T00:00:00.000Z"
+    }
+  ],
   "annotations": [],
   "glossary": [],
   "users": [

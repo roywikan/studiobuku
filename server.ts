@@ -18,7 +18,22 @@ import {
   seedInitialCatalog,
   syncToJsonBackup,
   autoBootstrapD1,
-  exportD1SchemaSql
+  exportD1SchemaSql,
+  insertD1Log,
+  insertD1Chapter,
+  updateD1Chapter,
+  deleteD1Chapter,
+  insertD1Project,
+  updateD1Project,
+  insertD1Idea,
+  updateD1Idea,
+  deleteD1Idea,
+  insertD1Annotation,
+  updateD1Annotation,
+  deleteD1Annotation,
+  insertD1Glossary,
+  updateD1Glossary,
+  deleteD1Glossary
 } from "./src/server/d1";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -347,245 +362,310 @@ async function startServer() {
     });
   });
 
+  // Logs Query & Manual Addition APIs
+  app.get("/api/logs", (req, res) => {
+    try {
+      const projId = req.query.projectId as string;
+      const query = projId
+        ? d1.prepare("SELECT * FROM logs WHERE projectId = ? ORDER BY datetime(timestamp) DESC LIMIT 100").all(projId)
+        : d1.prepare("SELECT * FROM logs ORDER BY datetime(timestamp) DESC LIMIT 100").all();
+      res.json(query);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.post("/api/logs", (req, res) => {
+    try {
+      const { projectId, chapterId, chapterTitle, authorName, action } = req.body;
+      if (!projectId || !action) {
+        return res.status(400).json({ error: "projectId dan action wajib diisi" });
+      }
+      const newLog = {
+        id: "log_" + Date.now(),
+        projectId,
+        chapterId: chapterId || null,
+        chapterTitle: chapterTitle || "Catatan Naskah",
+        authorName: authorName || "Penulis Studio",
+        action,
+        timestamp: new Date().toISOString()
+      };
+      insertD1Log(newLog as any);
+      res.json({ success: true, log: newLog });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
   // Projects CRUD
   app.post("/api/projects", (req, res) => {
-    const db = readDb();
-    const { title, subtitle, genre, synopsis, isPrivate, ownerId, ownerName, coAuthors } = req.body;
-    const newProject: Project = {
-      id: "proj_" + Date.now(),
-      title: title || "Proyek Buku Baru",
-      subtitle: subtitle || "Naskah Fiksi / Non-Fiksi Studio",
-      genre: genre || "Fiksi",
-      synopsis: synopsis || "Sinopsis naskah cerita...",
-      createdAt: new Date().toISOString(),
-      isPrivate: !!isPrivate,
-      ownerId: ownerId || req.body.authorId || "auth_1",
-      ownerName: ownerName || req.body.authorName || "Penulis Studio",
-      coAuthors: Array.isArray(coAuthors) ? coAuthors : []
-    };
-    db.projects.push(newProject);
+    try {
+      const { title, subtitle, genre, synopsis, isPrivate, ownerId, ownerName, coAuthors } = req.body;
+      const newProject: Project = {
+        id: "proj_" + Date.now(),
+        title: title || "Proyek Buku Baru",
+        subtitle: subtitle || "Naskah Fiksi / Non-Fiksi Studio",
+        genre: genre || "Fiksi",
+        synopsis: synopsis || "Sinopsis naskah cerita...",
+        createdAt: new Date().toISOString(),
+        isPrivate: !!isPrivate,
+        ownerId: ownerId || req.body.authorId || "auth_1",
+        ownerName: ownerName || req.body.authorName || "Penulis Studio",
+        coAuthors: Array.isArray(coAuthors) ? coAuthors : []
+      };
 
-    const firstChap: Chapter = {
-      id: "chap_" + Date.now(),
-      projectId: newProject.id,
-      title: "Bab 1: Permulaan",
-      subtitle: "Draf awal cerita",
-      content: "Tulis isi naskah bab pertama Anda di sini...",
-      order: 1,
-      status: "draft",
-      lastEditedBy: ownerName || req.body.authorName || "Penulis Studio",
-      updatedAt: new Date().toISOString()
-    };
-    db.chapters.push(firstChap);
+      const firstChap: Chapter = {
+        id: "chap_" + Date.now(),
+        projectId: newProject.id,
+        title: "Bab 1: Permulaan",
+        subtitle: "Draf awal cerita",
+        content: "Tulis isi naskah bab pertama Anda di sini...",
+        order: 1,
+        status: "draft",
+        lastEditedBy: ownerName || req.body.authorName || "Penulis Studio",
+        updatedAt: new Date().toISOString()
+      };
 
-    writeDb(db);
-    res.json(newProject);
+      insertD1Project(newProject);
+      insertD1Chapter(firstChap);
+
+      insertD1Log({
+        id: "log_" + Date.now(),
+        projectId: newProject.id,
+        chapterId: firstChap.id,
+        chapterTitle: firstChap.title,
+        authorName: ownerName || req.body.authorName || "Penulis Studio",
+        action: `Inisiasi proyek naskah baru: "${newProject.title}"`,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json(newProject);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.put("/api/projects/:id", (req, res) => {
-    const db = readDb();
-    const projIndex = db.projects.findIndex(p => p.id === req.params.id);
-    if (projIndex === -1) return res.status(404).json({ error: "Project not found" });
-
-    db.projects[projIndex] = {
-      ...db.projects[projIndex],
-      ...req.body,
-      isPrivate: typeof req.body.isPrivate === "boolean" ? req.body.isPrivate : db.projects[projIndex].isPrivate
-    };
-    writeDb(db);
-    res.json(db.projects[projIndex]);
+    try {
+      const updated = updateD1Project(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Project not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   // Chapters CRUD
   app.post("/api/chapters", (req, res) => {
-    const db = readDb();
-    const { projectId, title, subtitle, content, order, status, authorName } = req.body;
-    const newChapter: Chapter = {
-      id: "chap_" + Date.now(),
-      projectId: projectId || "proj_1",
-      title: title || "Bab Baru",
-      subtitle: subtitle || "",
-      content: cleanChapterContent(content || ""),
-      order: order || db.chapters.length + 1,
-      status: status || "draft",
-      lastEditedBy: authorName || "Penulis",
-      updatedAt: new Date().toISOString()
-    };
-    db.chapters.push(newChapter);
+    try {
+      const { projectId, title, subtitle, content, order, status, authorName } = req.body;
+      const newChapter: Chapter = {
+        id: "chap_" + Date.now(),
+        projectId: projectId || "proj_1",
+        title: title || "Bab Baru",
+        subtitle: subtitle || "",
+        content: cleanChapterContent(content || ""),
+        order: order || 1,
+        status: status || "draft",
+        lastEditedBy: authorName || "Penulis",
+        updatedAt: new Date().toISOString()
+      };
 
-    db.logs.unshift({
-      id: "log_" + Date.now(),
-      projectId: newChapter.projectId,
-      chapterId: newChapter.id,
-      chapterTitle: newChapter.title,
-      authorName: authorName || "Penulis",
-      action: "Membuat bab baru",
-      timestamp: new Date().toISOString()
-    });
+      insertD1Chapter(newChapter);
 
-    writeDb(db);
-    res.json(newChapter);
+      insertD1Log({
+        id: "log_" + Date.now(),
+        projectId: newChapter.projectId,
+        chapterId: newChapter.id,
+        chapterTitle: newChapter.title,
+        authorName: authorName || "Penulis",
+        action: `Membuat bab baru: ${newChapter.title}`,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json(newChapter);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.put("/api/chapters/:id", (req, res) => {
-    const db = readDb();
-    const index = db.chapters.findIndex(c => c.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: "Chapter not found" });
+    try {
+      const sanitizedContent = req.body.content !== undefined ? cleanChapterContent(req.body.content) : undefined;
+      const updates = {
+        ...req.body,
+        ...(sanitizedContent !== undefined ? { content: sanitizedContent } : {}),
+        updatedAt: new Date().toISOString()
+      };
 
-    const updated = {
-      ...db.chapters[index],
-      ...req.body,
-      content: req.body.content !== undefined ? cleanChapterContent(req.body.content) : db.chapters[index].content,
-      updatedAt: new Date().toISOString()
-    };
-    db.chapters[index] = updated;
+      const updated = updateD1Chapter(req.params.id, updates);
+      if (!updated) return res.status(404).json({ error: "Chapter not found" });
 
-    db.logs.unshift({
-      id: "log_" + Date.now(),
-      projectId: updated.projectId,
-      chapterId: updated.id,
-      chapterTitle: updated.title,
-      authorName: req.body.authorName || updated.lastEditedBy || "Penulis",
-      action: req.body.actionDescription || "Memperbarui isi bab",
-      timestamp: new Date().toISOString()
-    });
+      insertD1Log({
+        id: "log_" + Date.now(),
+        projectId: updated.projectId,
+        chapterId: updated.id,
+        chapterTitle: updated.title,
+        authorName: req.body.authorName || updated.lastEditedBy || "Penulis",
+        action: req.body.actionDescription || "Memperbarui isi bab",
+        timestamp: new Date().toISOString()
+      });
 
-    if (db.logs.length > 50) db.logs = db.logs.slice(0, 50);
-
-    writeDb(db);
-    res.json(updated);
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.delete("/api/chapters/:id", (req, res) => {
-    const db = readDb();
-    const chap = db.chapters.find(c => c.id === req.params.id);
-    db.chapters = db.chapters.filter(c => c.id !== req.params.id);
-    if (chap) {
-      db.logs.unshift({
-        id: "log_" + Date.now(),
-        projectId: chap.projectId,
-        chapterTitle: chap.title,
-        authorName: "Penulis",
-        action: `Menghapus bab: ${chap.title}`,
-        timestamp: new Date().toISOString()
-      });
+    try {
+      const existing = d1.prepare("SELECT * FROM chapters WHERE id = ?").get(req.params.id) as any;
+      deleteD1Chapter(req.params.id);
+      if (existing) {
+        insertD1Log({
+          id: "log_" + Date.now(),
+          projectId: existing.projectId,
+          chapterTitle: existing.title,
+          authorName: "Penulis",
+          action: `Menghapus bab: ${existing.title}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
     }
-    writeDb(db);
-    res.json({ success: true });
   });
 
   // Glossary CRUD
   app.get("/api/glossary", (req, res) => {
-    const db = readDb();
-    const projId = req.query.projectId as string;
-    const terms = (db.glossary || []).filter(g => !projId || g.projectId === projId);
-    res.json(terms);
+    try {
+      const projId = req.query.projectId as string;
+      const terms = projId
+        ? d1.prepare("SELECT * FROM glossary WHERE projectId = ? ORDER BY term ASC").all(projId)
+        : d1.prepare("SELECT * FROM glossary ORDER BY term ASC").all();
+      res.json(terms);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.post("/api/glossary", (req, res) => {
-    const db = readDb();
-    const { projectId, term, category, definition, aliases } = req.body;
-    const newTerm: GlossaryTerm = {
-      id: "glos_" + Date.now(),
-      projectId: projectId || "proj_1",
-      term: term || "Istilah Baru",
-      category: category || "Karakter",
-      definition: definition || "",
-      aliases: aliases || "",
-      updatedAt: new Date().toISOString()
-    };
-    if (!db.glossary) db.glossary = [];
-    db.glossary.push(newTerm);
-    writeDb(db);
-    res.json(newTerm);
+    try {
+      const { projectId, term, category, definition, aliases } = req.body;
+      const newTerm: GlossaryTerm = {
+        id: "glos_" + Date.now(),
+        projectId: projectId || "proj_1",
+        term: term || "Istilah Baru",
+        category: category || "Karakter",
+        definition: definition || "",
+        aliases: aliases || "",
+        updatedAt: new Date().toISOString()
+      };
+      insertD1Glossary(newTerm);
+      res.json(newTerm);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.put("/api/glossary/:id", (req, res) => {
-    const db = readDb();
-    if (!db.glossary) db.glossary = [];
-    const idx = db.glossary.findIndex(g => g.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: "Term not found" });
-    db.glossary[idx] = { ...db.glossary[idx], ...req.body, updatedAt: new Date().toISOString() };
-    writeDb(db);
-    res.json(db.glossary[idx]);
+    try {
+      const updated = updateD1Glossary(req.params.id, { ...req.body, updatedAt: new Date().toISOString() });
+      if (!updated) return res.status(404).json({ error: "Term not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.delete("/api/glossary/:id", (req, res) => {
-    const db = readDb();
-    if (!db.glossary) db.glossary = [];
-    db.glossary = db.glossary.filter(g => g.id !== req.params.id);
-    writeDb(db);
-    res.json({ success: true });
+    try {
+      deleteD1Glossary(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   // Ideas CRUD
   app.post("/api/ideas", (req, res) => {
-    const db = readDb();
-    const { projectId, title, content, category, authorId, pinned } = req.body;
-    const newIdea: Idea = {
-      id: "idea_" + Date.now(),
-      projectId: projectId || "proj_1",
-      title: title || "Ide Baru",
-      content: content || "",
-      category: category || "Plot",
-      authorId: authorId || "auth_1",
-      pinned: !!pinned,
-      createdAt: new Date().toISOString()
-    };
-    db.ideas.push(newIdea);
-    writeDb(db);
-    res.json(newIdea);
+    try {
+      const { projectId, title, content, category, authorId, pinned } = req.body;
+      const newIdea: Idea = {
+        id: "idea_" + Date.now(),
+        projectId: projectId || "proj_1",
+        title: title || "Ide Baru",
+        content: content || "",
+        category: category || "Plot",
+        authorId: authorId || "auth_1",
+        pinned: !!pinned,
+        createdAt: new Date().toISOString()
+      };
+      insertD1Idea(newIdea);
+      res.json(newIdea);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.put("/api/ideas/:id", (req, res) => {
-    const db = readDb();
-    const idx = db.ideas.findIndex(i => i.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: "Idea not found" });
-    db.ideas[idx] = { ...db.ideas[idx], ...req.body };
-    writeDb(db);
-    res.json(db.ideas[idx]);
+    try {
+      const updated = updateD1Idea(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Idea not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.delete("/api/ideas/:id", (req, res) => {
-    const db = readDb();
-    db.ideas = db.ideas.filter(i => i.id !== req.params.id);
-    writeDb(db);
-    res.json({ success: true });
+    try {
+      deleteD1Idea(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   // Annotations CRUD
   app.post("/api/annotations", (req, res) => {
-    const db = readDb();
-    const { projectId, chapterId, chapterTitle, text, authorName } = req.body;
-    const newAnn: Annotation = {
-      id: "ann_" + Date.now(),
-      projectId: projectId || "proj_1",
-      chapterId: chapterId || "",
-      chapterTitle: chapterTitle || "",
-      text: text || "",
-      authorName: authorName || "Penulis",
-      createdAt: new Date().toISOString(),
-      resolved: false
-    };
-    db.annotations.unshift(newAnn);
-    writeDb(db);
-    res.json(newAnn);
+    try {
+      const { projectId, chapterId, chapterTitle, text, authorName } = req.body;
+      const newAnn: Annotation = {
+        id: "ann_" + Date.now(),
+        projectId: projectId || "proj_1",
+        chapterId: chapterId || "",
+        chapterTitle: chapterTitle || "",
+        text: text || "",
+        authorName: authorName || "Penulis",
+        createdAt: new Date().toISOString(),
+        resolved: false
+      };
+      insertD1Annotation(newAnn);
+      res.json(newAnn);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.put("/api/annotations/:id", (req, res) => {
-    const db = readDb();
-    const idx = db.annotations.findIndex(a => a.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: "Annotation not found" });
-    db.annotations[idx] = { ...db.annotations[idx], ...req.body };
-    writeDb(db);
-    res.json(db.annotations[idx]);
+    try {
+      const updated = updateD1Annotation(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Annotation not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.delete("/api/annotations/:id", (req, res) => {
-    const db = readDb();
-    db.annotations = db.annotations.filter(a => a.id !== req.params.id);
-    writeDb(db);
-    res.json({ success: true });
+    try {
+      deleteD1Annotation(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   app.post("/api/import", (req, res) => {

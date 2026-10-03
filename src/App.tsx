@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { DB, Chapter, Idea, Author, Project, Annotation } from "./types";
+import { DB, Chapter, Idea, Author, Project, Annotation, RevisionLog } from "./types";
 import { WRITER_THEMES, WriterTheme } from "./theme";
 import { Navbar } from "./components/Navbar";
 import { ChapterEditor } from "./components/ChapterEditor";
@@ -514,10 +514,21 @@ export default function App() {
         updatedAt: new Date().toISOString()
       };
 
+      const initLog: RevisionLog = {
+        id: "log_" + Date.now(),
+        projectId: newProjId,
+        chapterId: firstChapId,
+        chapterTitle: firstChap.title,
+        authorName: currentAuthor.name || userSession?.name || "Penulis Studio",
+        action: `Inisiasi proyek naskah baru: "${newProj.title}"`,
+        timestamp: new Date().toISOString()
+      };
+
       const updatedDb: DB = {
         ...db,
         projects: [newProj, ...db.projects],
-        chapters: [firstChap, ...db.chapters]
+        chapters: [firstChap, ...db.chapters],
+        logs: [initLog, ...(db.logs || [])]
       };
       setDb(updatedDb);
       localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
@@ -592,13 +603,26 @@ export default function App() {
   // Handlers for Chapters
   const handleUpdateChapter = async (chapter: Chapter, actionDescription: string) => {
     try {
+      const nowIso = new Date().toISOString();
       const sanitizedChapter = {
         ...chapter,
         content: cleanChapterContent(chapter.content),
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
+
+      const newLog: RevisionLog = {
+        id: "log_" + Date.now(),
+        projectId: chapter.projectId,
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        authorName: currentAuthor.name,
+        action: actionDescription || "Memperbarui isi bab",
+        timestamp: nowIso
+      };
+
       const updatedChapters = db.chapters.map(c => c.id === chapter.id ? sanitizedChapter : c);
-      const updatedDb = { ...db, chapters: updatedChapters };
+      const updatedLogs = [newLog, ...(db.logs || [])];
+      const updatedDb = { ...db, chapters: updatedChapters, logs: updatedLogs };
       setDb(updatedDb);
       localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
 
@@ -618,6 +642,7 @@ export default function App() {
 
   const handleCreateChapter = async () => {
     try {
+      const nowIso = new Date().toISOString();
       const newChap: Chapter = {
         id: "chap_" + Date.now(),
         projectId: project.id,
@@ -627,9 +652,21 @@ export default function App() {
         order: currentProjectChapters.length + 1,
         status: "draft",
         lastEditedBy: currentAuthor.name,
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
-      const updatedDb = { ...db, chapters: [...db.chapters, newChap] };
+
+      const newLog: RevisionLog = {
+        id: "log_" + Date.now(),
+        projectId: project.id,
+        chapterId: newChap.id,
+        chapterTitle: newChap.title,
+        authorName: currentAuthor.name,
+        action: `Membuat bab baru: ${newChap.title}`,
+        timestamp: nowIso
+      };
+
+      const updatedLogs = [newLog, ...(db.logs || [])];
+      const updatedDb = { ...db, chapters: [...db.chapters, newChap], logs: updatedLogs };
       setDb(updatedDb);
       localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
       setSelectedChapterId(newChap.id);
@@ -649,8 +686,19 @@ export default function App() {
 
   const handleDeleteChapter = async (id: string) => {
     try {
+      const chap = db.chapters.find(c => c.id === id);
+      const newLog: RevisionLog = {
+        id: "log_" + Date.now(),
+        projectId: project.id,
+        chapterTitle: chap?.title || "Bab",
+        authorName: currentAuthor.name,
+        action: `Menghapus bab: ${chap?.title || ""}`,
+        timestamp: new Date().toISOString()
+      };
+
       const remaining = db.chapters.filter(c => c.id !== id);
-      const updatedDb = { ...db, chapters: remaining };
+      const updatedLogs = [newLog, ...(db.logs || [])];
+      const updatedDb = { ...db, chapters: remaining, logs: updatedLogs };
       setDb(updatedDb);
       localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
       if (currentProjectChapters.length > 1) {
@@ -661,6 +709,33 @@ export default function App() {
       await fetch(`/api/chapters/${id}`, { method: "DELETE" });
     } catch (e) {
       console.warn("Chapter deleted locally:", e);
+    }
+  };
+
+  const handleAddManualLog = async (logData: Partial<RevisionLog>) => {
+    try {
+      const newLog: RevisionLog = {
+        id: "log_" + Date.now(),
+        projectId: project.id,
+        chapterId: logData.chapterId || undefined,
+        chapterTitle: logData.chapterTitle || "Catatan Editorial Naskah",
+        authorName: currentAuthor.name,
+        action: logData.action || "Catatan revisi editorial",
+        timestamp: new Date().toISOString()
+      };
+
+      const updatedLogs = [newLog, ...(db?.logs || [])];
+      const updatedDb = { ...db!, logs: updatedLogs };
+      setDb(updatedDb);
+      localStorage.setItem("studio_buku_db_cache", JSON.stringify(updatedDb));
+
+      await fetch("/api/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newLog)
+      });
+    } catch (e) {
+      console.warn("Manual log saved locally:", e);
     }
   };
 
@@ -852,7 +927,16 @@ export default function App() {
         )}
 
         {activeTab === "logs" && (
-          <RevisionLogs logs={currentProjectLogs} currentTheme={currentTheme} />
+          <RevisionLogs
+            logs={currentProjectLogs}
+            allLogs={safeLogs}
+            projectTitle={project.title}
+            projectId={project.id}
+            chapters={currentProjectChapters}
+            currentAuthorName={currentAuthor.name}
+            onAddLog={handleAddManualLog}
+            currentTheme={currentTheme}
+          />
         )}
 
         {activeTab === "preview" && (

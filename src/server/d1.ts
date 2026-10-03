@@ -592,10 +592,35 @@ export function autoBootstrapD1() {
     syncToJsonBackup();
   }
 
+  // 7. Pastikan riwayat log revisi terisi jika masih kosong
+  const logCountCheck = (d1.prepare("SELECT COUNT(*) as count FROM logs").get() as any)?.count || 0;
+  if (logCountCheck === 0 && INITIAL_SEED_DB.logs && INITIAL_SEED_DB.logs.length > 0) {
+    console.log("[Cloudflare D1] 📝 Seeding initial revision logs into D1...");
+    const insertLog = d1.prepare(`
+      INSERT OR REPLACE INTO logs (id, projectId, chapterId, chapterTitle, authorName, action, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const log of INITIAL_SEED_DB.logs) {
+      insertLog.run(
+        log.id,
+        log.projectId,
+        log.chapterId || null,
+        log.chapterTitle || null,
+        log.authorName || "Penulis",
+        log.action || "Menyunting",
+        log.timestamp || new Date().toISOString()
+      );
+    }
+    console.log(`[Cloudflare D1] ✅ Berhasil mengisi ${INITIAL_SEED_DB.logs.length} riwayat revisi awal ke D1.`);
+    exportD1SchemaSql();
+    syncToJsonBackup();
+  }
+
   const userCount = (d1.prepare("SELECT COUNT(*) as count FROM users").get() as any).count;
   const projectCount = (d1.prepare("SELECT COUNT(*) as count FROM projects").get() as any).count;
   const chapterCount = (d1.prepare("SELECT COUNT(*) as count FROM chapters").get() as any).count;
   const coauthorCount = (d1.prepare("SELECT COUNT(*) as count FROM project_coauthors").get() as any).count;
+  const logCount = (d1.prepare("SELECT COUNT(*) as count FROM logs").get() as any).count;
 
   return {
     success: true,
@@ -604,7 +629,8 @@ export function autoBootstrapD1() {
       users: userCount,
       projects: projectCount,
       chapters: chapterCount,
-      coauthors: coauthorCount
+      coauthors: coauthorCount,
+      logs: logCount
     }
   };
 }
@@ -946,6 +972,236 @@ export function syncToJsonBackup() {
   } catch (e) {
     console.error("Failed to sync JSON backup:", e);
   }
+}
+
+// ==========================================================
+// D1 CRUD OPERATIONS (RELATIONAL PERSISTENCE IN SQLITE/D1)
+// ==========================================================
+
+export function insertD1Log(log: RevisionLog) {
+  d1.prepare(`
+    INSERT INTO logs (id, projectId, chapterId, chapterTitle, authorName, action, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    log.id,
+    log.projectId,
+    log.chapterId || null,
+    log.chapterTitle || null,
+    log.authorName || "Penulis",
+    log.action || "Menyunting",
+    log.timestamp || new Date().toISOString()
+  );
+  syncToJsonBackup();
+}
+
+export function insertD1Chapter(chap: Chapter) {
+  d1.prepare(`
+    INSERT OR REPLACE INTO chapters (id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    chap.id,
+    chap.projectId,
+    chap.title,
+    chap.subtitle || "",
+    chap.content || "",
+    chap.order || 1,
+    chap.status || "draft",
+    chap.lastEditedBy || "Penulis",
+    chap.updatedAt || new Date().toISOString()
+  );
+  syncToJsonBackup();
+}
+
+export function updateD1Chapter(id: string, updates: Partial<Chapter>) {
+  const existing = d1.prepare("SELECT * FROM chapters WHERE id = ?").get(id) as any;
+  if (!existing) return null;
+  const merged = { ...existing, ...updates };
+  d1.prepare(`
+    UPDATE chapters 
+    SET title = ?, subtitle = ?, content = ?, "order" = ?, status = ?, lastEditedBy = ?, updatedAt = ?
+    WHERE id = ?
+  `).run(
+    merged.title,
+    merged.subtitle || "",
+    merged.content || "",
+    merged.order || 1,
+    merged.status || "draft",
+    merged.lastEditedBy || "Penulis",
+    merged.updatedAt || new Date().toISOString(),
+    id
+  );
+  syncToJsonBackup();
+  return merged;
+}
+
+export function deleteD1Chapter(id: string) {
+  d1.prepare("DELETE FROM chapters WHERE id = ?").run(id);
+  syncToJsonBackup();
+}
+
+export function insertD1Project(proj: Project) {
+  const coAuthorsStr = typeof proj.coAuthors === "string" ? proj.coAuthors : JSON.stringify(proj.coAuthors || []);
+  d1.prepare(`
+    INSERT OR REPLACE INTO projects (id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    proj.id,
+    proj.title,
+    proj.subtitle || "",
+    proj.genre || "Fiksi",
+    proj.synopsis || "",
+    proj.createdAt || new Date().toISOString(),
+    proj.isPrivate ? 1 : 0,
+    proj.ownerId || "auth_1",
+    proj.ownerName || "Penulis",
+    coAuthorsStr
+  );
+  syncToJsonBackup();
+}
+
+export function updateD1Project(id: string, updates: Partial<Project>) {
+  const existing = d1.prepare("SELECT * FROM projects WHERE id = ?").get(id) as any;
+  if (!existing) return null;
+  const merged = { ...existing, ...updates };
+  const coAuthorsStr = typeof merged.coAuthors === "string" ? merged.coAuthors : JSON.stringify(merged.coAuthors || []);
+  d1.prepare(`
+    UPDATE projects 
+    SET title = ?, subtitle = ?, genre = ?, synopsis = ?, isPrivate = ?, ownerId = ?, ownerName = ?, coAuthors = ?
+    WHERE id = ?
+  `).run(
+    merged.title,
+    merged.subtitle || "",
+    merged.genre || "Fiksi",
+    merged.synopsis || "",
+    merged.isPrivate ? 1 : 0,
+    merged.ownerId || "auth_1",
+    merged.ownerName || "Penulis",
+    coAuthorsStr,
+    id
+  );
+  syncToJsonBackup();
+  return merged;
+}
+
+export function insertD1Idea(idea: Idea) {
+  d1.prepare(`
+    INSERT OR REPLACE INTO ideas (id, projectId, title, content, category, authorId, pinned, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    idea.id,
+    idea.projectId,
+    idea.title,
+    idea.content || "",
+    idea.category || "Plot",
+    idea.authorId || "auth_1",
+    idea.pinned ? 1 : 0,
+    idea.createdAt || new Date().toISOString()
+  );
+  syncToJsonBackup();
+}
+
+export function updateD1Idea(id: string, updates: Partial<Idea>) {
+  const existing = d1.prepare("SELECT * FROM ideas WHERE id = ?").get(id) as any;
+  if (!existing) return null;
+  const merged = { ...existing, ...updates };
+  d1.prepare(`
+    UPDATE ideas 
+    SET title = ?, content = ?, category = ?, pinned = ?
+    WHERE id = ?
+  `).run(
+    merged.title,
+    merged.content || "",
+    merged.category || "Plot",
+    merged.pinned ? 1 : 0,
+    id
+  );
+  syncToJsonBackup();
+  return merged;
+}
+
+export function deleteD1Idea(id: string) {
+  d1.prepare("DELETE FROM ideas WHERE id = ?").run(id);
+  syncToJsonBackup();
+}
+
+export function insertD1Annotation(ann: Annotation) {
+  d1.prepare(`
+    INSERT OR REPLACE INTO annotations (id, projectId, chapterId, chapterTitle, text, authorName, createdAt, resolved)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    ann.id,
+    ann.projectId,
+    ann.chapterId,
+    ann.chapterTitle,
+    ann.text,
+    ann.authorName,
+    ann.createdAt,
+    ann.resolved ? 1 : 0
+  );
+  syncToJsonBackup();
+}
+
+export function updateD1Annotation(id: string, updates: Partial<Annotation>) {
+  const existing = d1.prepare("SELECT * FROM annotations WHERE id = ?").get(id) as any;
+  if (!existing) return null;
+  const merged = { ...existing, ...updates };
+  d1.prepare(`
+    UPDATE annotations 
+    SET text = ?, resolved = ?
+    WHERE id = ?
+  `).run(
+    merged.text,
+    merged.resolved ? 1 : 0,
+    id
+  );
+  syncToJsonBackup();
+  return merged;
+}
+
+export function deleteD1Annotation(id: string) {
+  d1.prepare("DELETE FROM annotations WHERE id = ?").run(id);
+  syncToJsonBackup();
+}
+
+export function insertD1Glossary(g: GlossaryItem) {
+  d1.prepare(`
+    INSERT OR REPLACE INTO glossary (id, projectId, term, category, definition, aliases, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    g.id,
+    g.projectId,
+    g.term,
+    g.category || "Karakter",
+    g.definition,
+    g.aliases || "",
+    g.updatedAt || new Date().toISOString()
+  );
+  syncToJsonBackup();
+}
+
+export function updateD1Glossary(id: string, updates: Partial<GlossaryItem>) {
+  const existing = d1.prepare("SELECT * FROM glossary WHERE id = ?").get(id) as any;
+  if (!existing) return null;
+  const merged = { ...existing, ...updates };
+  d1.prepare(`
+    UPDATE glossary 
+    SET term = ?, category = ?, definition = ?, aliases = ?, updatedAt = ?
+    WHERE id = ?
+  `).run(
+    merged.term,
+    merged.category || "Karakter",
+    merged.definition,
+    merged.aliases || "",
+    merged.updatedAt || new Date().toISOString(),
+    id
+  );
+  syncToJsonBackup();
+  return merged;
+}
+
+export function deleteD1Glossary(id: string) {
+  d1.prepare("DELETE FROM glossary WHERE id = ?").run(id);
+  syncToJsonBackup();
 }
 
 // Automatically bootstrap schema and migrate on load

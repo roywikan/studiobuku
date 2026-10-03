@@ -1,7 +1,7 @@
 -- ==========================================================
 -- STUDIO BUKU DATABASE SCHEMA & SEED DATA (Cloudflare D1)
 -- Database Name: studiobuku-db
--- Auto-generated: 2026-10-02T15:01:43.956Z
+-- Auto-generated: 2026-10-03T03:34:35.864Z
 -- ==========================================================
 
 CREATE TABLE IF NOT EXISTS _cf_KV (

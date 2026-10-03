@@ -1,4 +1,4 @@
-import { Project, Chapter, Author, DB } from "./types";
+import { Project, Chapter, Author, DB, RevisionLog } from "./types";
 
 export function slugify(text: string): string {
   return (text || "")
@@ -502,6 +502,7 @@ export const RAW_PROJECT_LIST = [
 export function generateSeedDatabase(): DB {
   const projects: Project[] = [];
   const chapters: Chapter[] = [];
+  const logs: RevisionLog[] = [];
 
   RAW_PROJECT_LIST.forEach((item, pIdx) => {
     const projId = `proj_${pIdx + 1}`;
@@ -556,6 +557,45 @@ export function generateSeedDatabase(): DB {
         updatedAt: new Date(2026, 8, 30 - (pIdx % 30), cIdx + 1).toISOString()
       });
     });
+
+    // Initial revision logs per project
+    logs.push(
+      {
+        id: `log_${projId}_1`,
+        projectId: projId,
+        chapterId: `chap_${projId}_1`,
+        chapterTitle: `Bab 1: Awal Mula Dan Latar Peristiwa`,
+        authorName: item.owner,
+        action: `Inisiasi draf naskah & penulisan adegan pembuka "${item.title}"`,
+        timestamp: new Date(dateObj.getTime() + 1000 * 60 * 30).toISOString()
+      },
+      {
+        id: `log_${projId}_2`,
+        projectId: projId,
+        chapterTitle: `Kerangka Proyek Naskah`,
+        authorName: coAuthorNames[0],
+        action: `Penyusunan outline 8 bab dan sinkronisasi sub-tema`,
+        timestamp: new Date(dateObj.getTime() + 1000 * 60 * 180).toISOString()
+      },
+      {
+        id: `log_${projId}_3`,
+        projectId: projId,
+        chapterId: `chap_${projId}_3`,
+        chapterTitle: `Bab 3: Dialektika Gagasan Dan Telaah Mendalam`,
+        authorName: item.owner,
+        action: `Penyuntingan diksi, pemutakhiran dialog, dan penguatan narasi`,
+        timestamp: new Date(dateObj.getTime() + 1000 * 60 * 60 * 24).toISOString()
+      },
+      {
+        id: `log_${projId}_4`,
+        projectId: projId,
+        chapterId: `chap_${projId}_6`,
+        chapterTitle: `Bab 6: Analisis Komparatif Dan Pembahasan`,
+        authorName: coAuthorNames[1] || coAuthorNames[0],
+        action: `Review editorial naskah bersama tim co-author Studio Buku`,
+        timestamp: new Date(dateObj.getTime() + 1000 * 60 * 60 * 48).toISOString()
+      }
+    );
   });
 
   return {
@@ -563,7 +603,7 @@ export function generateSeedDatabase(): DB {
     projects,
     chapters,
     ideas: [],
-    logs: [],
+    logs,
     annotations: [],
     glossary: []
   };
