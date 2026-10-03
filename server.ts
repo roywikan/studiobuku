@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
+import { generateWithGeminiPool, getGeminiPoolInfo } from "./src/server/geminiPool";
 import { INITIAL_SEED_DB, slugify as seedSlugify } from "./src/seedData";
 import {
   d1,
@@ -1701,30 +1702,26 @@ async function startServer() {
     res.send(html);
   });
 
-  // Gemini AI Assistant Proxy Route
+  // Gemini AI Multi-Key Pool Status Endpoint
+  app.get("/api/ai/pool-status", (req, res) => {
+    try {
+      const customApiKey = req.headers["x-gemini-api-key"] as string | undefined;
+      const info = getGeminiPoolInfo(customApiKey);
+      res.json({ success: true, ...info });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Gagal memeriksa status pool AI" });
+    }
+  });
+
+  // Gemini AI Assistant Proxy Route with 5-Key Pool Load Balancing & Automatic 429 Fallback
   app.post("/api/ai/assist", async (req, res) => {
     try {
       const { action, text, context, genre } = req.body;
       const customApiKey = req.headers["x-gemini-api-key"] as string | undefined;
-      const apiKey = customApiKey?.trim() || process.env.GEMINI_API_KEY;
-
-      if (!apiKey) {
-        return res.status(400).json({
-          error: "API Key Gemini belum terkonfigurasi. Harap tentukan GEMINI_API_KEY pada server atau masukkan API Key pribadi di Pengaturan AI Studio."
-        });
-      }
-
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
 
       let prompt = "";
-      let systemInstruction = "Anda adalah asisten penulisan kreatif profesional untuk Studio Buku — studio penulisan buku kolaboratif (menulis bersama, berpikir bersama) dalam bahasa Indonesia.";
+      const systemInstruction =
+        "Anda adalah asisten penulisan kreatif profesional untuk Studio Buku — platform penulisan naskah buku dan co-authorship dalam bahasa Indonesia.";
 
       if (action === "continue") {
         prompt = `Lanjutkan tulisan berikut untuk novel bergenre ${genre || "Fiksi"}. Pastikan gaya bahasa selaras, mengalir natural, dan melanjutkan alur emosi dengan indah (panjang sekitar 2-3 paragraf):\n\nKonteks sebelumnya: "${context || ''}"\n\nTeks terakhir:\n"${text}"`;
@@ -1738,41 +1735,32 @@ async function startServer() {
         prompt = text || "Berikan saran kreatif untuk penulisan naskah ini.";
       }
 
-      let responseText = "";
-      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-      let lastError = null;
+      const poolResult = await generateWithGeminiPool({
+        prompt,
+        systemInstruction,
+        temperature: 0.75,
+        customApiKey,
+      });
 
-      for (const m of modelsToTry) {
-        try {
-          const response = await ai.models.generateContent({
-            model: m,
-            contents: prompt,
-            config: {
-              systemInstruction,
-              temperature: 0.8,
-            }
-          });
-          if (response.text) {
-            responseText = response.text;
-            break;
-          }
-        } catch (err: any) {
-          console.warn(`Model ${m} failed:`, err?.message || err);
-          lastError = err;
-        }
-      }
-
-      if (!responseText) {
-        throw lastError || new Error("Semua model Gemini gagal merespons.");
-      }
-
-      res.json({ result: responseText });
+      res.json({
+        result: poolResult.text,
+        modelUsed: poolResult.modelUsed,
+        keyIndex: poolResult.keyIndex + 1,
+        totalKeys: poolResult.totalKeys,
+        attemptsUsed: poolResult.attemptsUsed,
+      });
     } catch (err: any) {
-      console.error("Gemini AI Error:", err);
+      console.error("[Gemini Multi-Key API Error]:", err);
       const msg = err?.message || "";
-      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || msg.includes("rate limit")) {
-        return res.status(429).json({ 
-          error: "Batas Kuota Free Tier Terlampaui (Error 429: Too Many Requests). Batas maksimal adalah 15 permintaan per menit (RPM) dan 1.500 per hari (RPD). Harap tunggu 1 menit sebelum mencoba kembali atau tingkatkan ke paket Pay-as-you-go." 
+      if (
+        msg.includes("429") ||
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.toLowerCase().includes("quota") ||
+        msg.toLowerCase().includes("rate limit")
+      ) {
+        return res.status(429).json({
+          error:
+            "Seluruh kuota Gemini API Key dalam pool telah terlampaui (Error 429: Too Many Requests). Harap tunggu 1 menit sebelum mencoba kembali.",
         });
       }
       res.status(500).json({ error: msg || "Gagal memproses permintaan AI." });
