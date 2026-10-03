@@ -246,4 +246,234 @@ OVO	BCA	39358 + Nomor HP	393580812345678
 OVO	Mandiri	60001 + Nomor HP	600010812345678
 ---
 
+
+
+---
+
+┌────────────────────────┐
+                    │ Permintaan Penulisan AI│
+                    └───────────┬────────────┘
+                                │
+                                ▼
+         ┌────────────────────────────────────────────────────────┐
+         │       LOAD BALANCER & MULTI-KEY ROTATOR POOL           │
+         │   (gemini-3.8-flash dengan SDK @google/genai)          │
+         └───────────┬────────────┬────────────┬────────────┬─────┘
+                     │            │            │            │
+                     ▼            ▼            ▼            ▼
+             [Key #1: 🔑] [Key #2: 🔑] [Key #3: 🔑] [Key #4: 🔑] [Key #5: 🔑]
+                     │
+          (Jika Key #1 kena 429)
+                     │
+                     └──► Otomatis Melompat ke Key #2 ──► Berhasil!
+
+
+🛠️ Komponen yang Diterapkan:
+1. Modul Rotator & Fallback Terpusat (src/server/geminiPool.ts)
+Membaca 5 Kunci Cloudflare Secrets / Environment:
+GEMINI_API_KEY_1
+GEMINI_API_KEY_2
+GEMINI_API_KEY_3
+GEMINI_API_KEY_4
+GEMINI_API_KEY_5
+(Serta fallback otomatis ke GEMINI_API_KEY default atau Kunci Kustom peramban jika diisi).
+Load Balancing (Round-Robin & Acak):
+Bebas dari penumpukan beban pada satu akun Google; setiap permintaan AI baru didistribusikan secara bergantian ke pool kunci yang aktif.
+Otomatis Fallback HTTP 429 (Rate Limit / Quota Exceeded):
+Jika sebuah kunci mencapai batas kuota per menit (RPM) atau per hari (RPD), server langsung menangkap kode status 429 / RESOURCE_EXHAUSTED, mencatat peringatan di log, dan seketika mencoba kunci berikutnya dalam pool secara transparan tanpa membuat proses pengguna gagal.
+Model Terpilih:
+Menggunakan gemini-3.8-flash sebagai model utama yang cepat dan cerdas untuk analisis naskah, pembuatan outline, dialog, dan evaluasi plot.
+2. Endpoint Backend Terintegrasi (server.ts)
+POST /api/ai/assist: Digunakan bersama oleh Asisten AI (Halaman Menu Menulis) dan Editor Bab (fitur Lanjutkan Teks & Perbaiki Ejaan).
+GET /api/ai/pool-status: Menyediakan informasi jumlah kunci aktif di pool dan model yang sedang berjalan.
+3. UI Asisten AI & Indikator Transparansi (AiAssistantView.tsx)
+Menampilkan badge status pool: Pool: X Key Aktif (Load Balanced & Fallback 429).
+Setiap respons AI menampilkan informasi kunci yang mengeksekusi (contoh: ✨ Key #2 dari 5 Pool (gemini-3.8-flash)).
+Modal Pengaturan Kunci memberikan panduan pengisian rahasia di Cloudflare Environment Variables serta tetap mengizinkan penulis memasukkan API Key pribadi jika diinginkan.
+4. Konfigurasi Lingkungan (.env.example)
+Variabel telah didefinisikan secara rapi di .env.example:
+
+# Cloudflare Variables & Secrets - Pool 5 Gemini API Keys
+GEMINI_API_KEY_1=
+GEMINI_API_KEY_2=
+GEMINI_API_KEY_3=
+GEMINI_API_KEY_4=
+GEMINI_API_KEY_5=
+GEMINI_API_KEY=
+
+
+Dengan sistem ini, batas kuota Free Tier aplikasi Anda kini dapat dilipatgandakan hingga 5 kali lipat (hingga 75 RPM dan 7.500 RPD) tanpa khawatir mengalami service interruption saat lalu lintas penulisan sedang ramai!
+
+---
+
+Berikut adalah panduan lengkap mengenai arsitektur SQL yang benar untuk naskah buku (Author, Project, dan Chapters) sesuai standar database relasional aplikasi ini (Cloudflare D1 / SQLite), serta teknik & formula prompt AI agar menghasilkan SQL konten novel/buku lengkap tanpa terpotong atau error sintaks.
+1. Rekonstruksi SQL Relasional yang Benar
+Dalam aplikasi Studio Buku (Cloudflare D1 / SQLite), struktur relasional dirancang dengan prinsip Integritas Relasional (Foreign Key) & Atomic Transaction:
+
+[ authors / users ]
+       │ 1
+       │ (ownerId)
+       ▼ *
+   [ projects ] ───────┐ 1
+       │               │
+       │ (projectId)   │ (projectId)
+       ▼ *             ▼ *
+  [ chapters ]    [ glossary / ideas ]
+
+
+
+Aturan Kunci Konstruksi SQL:
+Urutan Eksekusi (Parent ke Child):
+Buat authors terlebih dahulu.
+Buat projects (mengacu pada ownerId).
+Buat chapters (mengacu pada projectId).
+Kolom "order" adalah SQL Reserved Keyword:
+Di SQL, kata order (seperti pada ORDER BY) adalah kata cadangan. Wajib dibungkus tanda kutip dua: "order".
+Escaping Tanda Petik Tunggal ('):
+Di SQL, dialog seperti Jum'at atau don't akan membuat query error. Karakter petik tunggal harus di-escape menjadi dua petik tunggal: '' (contoh: 'Jum''at itu gerimis...').
+Gunakan BEGIN TRANSACTION & COMMIT:
+Memastikan bahwa buku dan 8 babnya masuk sekaligus secara utuh (atomic).
+Contoh Konstruksi SQL yang Valid:
+
+BEGIN TRANSACTION;
+
+-- 1. Penulis (Author)
+INSERT OR IGNORE INTO authors (id, name, role, avatar, color)
+VALUES (
+  'auth_roy',
+  'Roy Wikan',
+  'Lead Author',
+  '👨‍💼',
+  '#3b82f6'
+);
+
+-- 2. Proyek Buku (Project)
+INSERT INTO projects (
+  id, title, subtitle, genre, synopsis, createdAt, isPrivate, ownerId, ownerName, coAuthors
+) VALUES (
+  'proj_kronik_nusantara',
+  'Kronik Nusantara 2045',
+  'Fajar Kebangkitan Kepulauan Megapolis',
+  'Sci-Fi Nusantara',
+  'Di era pasca-transisi energi 2045, seorang insinyur maritim menemukan relik komputasi kuantum kuno di kedalaman Palung Jawa...',
+  '2026-10-02T10:00:00.000Z',
+  0, -- 0 = Publik, 1 = Privat
+  'auth_roy',
+  'Roy Wikan',
+  '[]'
+);
+
+-- 3. Bab-Bab (Chapters 1 s/d 8)
+INSERT INTO chapters (
+  id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt
+) VALUES 
+(
+  'chap_kronik_01',
+  'proj_kronik_nusantara',
+  'Bab 1: Sinyal dari Palung Dalam',
+  'Frekuensi Tak Dikenal di Laut Sunda',
+  'Hujan lebat mengguyur anjungan kapal riset Baruna V saat sensor sonar mendadak merekam gelombang berulang...',
+  1,
+  'published',
+  'Roy Wikan',
+  '2026-10-02T10:00:00.000Z'
+),
+(
+  'chap_kronik_02',
+  'proj_kronik_nusantara',
+  'Bab 2: Jejak Selat Sunda',
+  'Dekripsi Sandi Pertama',
+  'Layar monitor di ruang kendali berkedip ritmis. Deretan heksadesimal kuno itu bukan berasal dari satelit...',
+  2,
+  'published',
+  'Roy Wikan',
+  '2026-10-02T10:15:00.000Z'
+);
+-- ... dilanjutkan sampai Bab 8
+
+COMMIT;
+
+2. Tantangan AI: Mengapa Meminta 8 Bab x 1500 Kata Sekaligus Sering Gagal?
+Jika Anda meminta AI menghasilkan 8 bab × 1.500 kata = 12.000 kata (±16.000 token) dalam satu kali prompt tunggal:
+Batas Output Token AI: Kebanyakan model AI memiliki batas maksimal output per respons sekitar 4.096 hingga 8.192 token (setara 3.000 – 6.000 kata). AI akan terpotong di tengah jalan (truncated).
+Halusinasi Peringkasan (Cheating): Karena kehabisan ruang output, AI akan "meringkas" cerita menjadi hanya 100–200 kata per bab demi menyelesaikan instruksi 8 bab.
+
+
+3. Strategi Prompt yang Efektif
+Gunakan 2 Langkah Terarah:
+Langkah 1: Buat Kerangka Buku & Bab (Skema Dasar SQL)
+Minta AI membuat struktur projects, authors, dan sinopsis/outline 8 bab.
+Langkah 2: Generate Isi Cerita Panjang per Bab (atau per 2 Bab)
+Setiap bab benar-benar ditulis sepanjang 1.500 kata dengan format INSERT INTO chapters.
+4. Template Prompt AI yang Siap Digunakan
+Salin prompt di bawah ini ke AI (ChatGPT, Claude, atau Gemini):
+📝 Prompt Tahap 1: Inisialisasi Proyek & Outline 8 Bab
+
+Kamu adalah database engineer dan novelis handal. Buatkan skrip SQL SQLite / Cloudflare D1 untuk proyek buku baru dengan skema berikut:
+
+Tabel projects:
+id (TEXT), title (TEXT), subtitle (TEXT), genre (TEXT), synopsis (TEXT), createdAt (TEXT ISO), isPrivate (INTEGER: 0), ownerId (TEXT), ownerName (TEXT), coAuthors (TEXT JSON: '[]')
+
+Tabel authors:
+id (TEXT), name (TEXT), role (TEXT), avatar (TEXT emoji), color (TEXT hex)
+
+Ketentuan:
+1. Judul buku: [TULIS JUDUL / TOPIK BUKU ANDA]
+2. Genre: [CONTOH: Fiksi Sejarah / Sci-Fi / Romansa]
+3. Penulis: [NAMA PENULIS]
+4. Tuliskan query BEGIN TRANSACTION; lalu INSERT INTO authors dan INSERT INTO projects dengan sinopsis mendalam (minimal 200 kata).
+5. Buat juga outline daftar judul Bab 1 sampai Bab 8 beserta subtitelnya dalam bentuk komentar SQL.
+6. Escape tanda petik tunggal (') menjadi ('').
+7. Akhiri dengan COMMIT;
+
+
+
+📝 Prompt Tahap 2: Menghasilkan Bab dengan Narasi 1.500+ Kata (Bisa per 1 atau 2 Bab)
+Lanjutkan pembuatan isi naskah untuk Bab [SEBUTKAN, MISAL: Bab 1 dan Bab 2]. 
+Format output HARUS berupa query SQL INSERT INTO chapters yang valid untuk SQLite / Cloudflare D1.
+
+Skema tabel chapters:
+id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt
+
+Instruksi Kritis Penulisan:
+1. Kolom "content" HARUS berisi cerita novel yang utuh, mendalam, kaya dialog dan deskripsi sensorik, dengan PANJANG MINIMAL 1.500 KATA untuk bab ini. Jangan membuat ringkasan, jangan gunakan bullet point, dan jangan memotong narasi.
+2. Format teks konten: Gunakan paragraf normal dengan jeda baris ganda (\n\n) untuk dialog dan alinea baru.
+3. ATURAN SQL ESCAPING (SANGAT PENTING): 
+   - Semua tanda petik tunggal (') dalam narasi atau dialog (seperti kata: Jum'at, tak'kan, don't, 'halo') WAJIB di-escape menjadi dua petik tunggal ('') agar query SQL tidak rusak.
+   - Kolom "order" wajib dibungkus tanda kutip ganda ("order").
+   - Status bernilai 'published'.
+4. projectId yang digunakan: '[SESUAIKAN_ID_PROJEK]'
+5. Bungkus dalam:
+   BEGIN TRANSACTION;
+   INSERT INTO chapters (id, projectId, title, subtitle, content, "order", status, lastEditedBy, updatedAt) VALUES (...);
+   COMMIT;
+
+
+5. Rekomendasi Format Teks Multiline di SQL D1
+
+Jika Anda mengeksekusi SQL ini langsung ke terminal Cloudflare D1 (wrangler d1 execute):
+Di SQLite standar, string multi-baris di dalam petik tunggal 'paragraf 1\n\nparagraf 2' didukung penuh.
+Jika tool CLI Anda sensitif terhadap karakter newline mentah (breakline), Anda bisa meminta AI menggabungkan baris dengan operator || char(10) || (seperti yang digunakan di fungsi internal toSqlString aplikasi ini).
+Dengan pola 2 tahap ini, Anda dijamin mendapatkan panjang narasi 1.500+ kata per bab yang kaya sastra tanpa terkena pemotongan token AI dan 100% bebas dari SQL error.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 *Dokumen ini dibuat secara resmi untuk pengelolaan aplikasi Studio Buku (Nulis Buku Bareng Studio).*
+
+
+
+
